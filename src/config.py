@@ -3,7 +3,7 @@ import sys
 import logging
 from inspect import isfunction
 from dataclasses import dataclass, field
-from typing import Dict, Any
+from typing import Dict, Any, List
 from simtk import unit
 from os.path import abspath, join
 
@@ -115,17 +115,24 @@ class Config:
         """Absolute path of directory with logs"""
         return join(self.SIMULATION_DIR, "log")
     
-    # Name of file with common logs
-    COMMON_LOG_NAME: str = "common"
+    # Name of file with main logs
+    MAIN_LOG_NAME: str = "main"
+    # Name of file with main logs
+    ANALYSIS_LOG_NAME: str = "analysis"
     # Name of file with LAMMPS logs
     LAMMPS_LOG_NAME: str = "lammps"
     # Extention of logs files
     LOG_EXT: str = ".log"
     
     @property
-    def COMMON_LOG_PATH(self) -> str:
-        """Absolute path of file with common logs"""
-        return join(self.LOG_DIR, self.COMMON_LOG_NAME + self.LOG_EXT)
+    def ANALYSIS_LOG_PATH(self) -> str:
+        """Absolute path of file with main logs"""
+        return join(self.LOG_DIR, self.ANALYSIS_LOG_NAME + self.LOG_EXT)
+    
+    @property
+    def MAIN_LOG_PATH(self) -> str:
+        """Absolute path of file with analysis logs"""
+        return join(self.LOG_DIR, self.MAIN_LOG_NAME + self.LOG_EXT)
     
     @property
     def LAMMPS_LOG_PATH(self) -> str:
@@ -141,19 +148,31 @@ class Config:
     # Extention of trajectory file
     TRAJECTORY_EXT: str = ".trj"
     
+    
+    @property
+    def ANALYSIS_DIR(self) -> str:
+        """Absolute path of directory with analysis results"""
+        return join(self.SIMULATION_DIR, "analysis")
+    
     def TRAJECTORY_PATH(self, n: int) -> str:
         """Absolute path of n step of trajectory file"""
         return join(self.TRAJECTORY_DIR, str(n) + self.TRAJECTORY_EXT)
     
-    
-    
+    TRAJECTORY_COLUMNS: List[str] = field(default_factory=lambda: [
+        "Particle Identifier",
+        "Particle Type",
+        "Position.X",
+        "Position.Y",
+        "Position.Z",
+        "Velocity.X",
+        "Velocity.Y",
+        "Velocity.Z",
+    ])
     
     
     # log mode
     LOG_MODE: int = logging.INFO
-    LOG_STREAM = sys.stdout
     LOG_FORMAT: str = "%(name)s -- %(levelname)s : %(message)s"
-    
     
     
     def dump(self):

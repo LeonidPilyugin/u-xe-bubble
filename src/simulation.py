@@ -3,6 +3,8 @@ import numpy as np
 from typing import Tuple
 from tqdm import tqdm
 from logging import Logger
+from multiprocessing import Pipe, Process
+from multiprocessing.connection import Connection
 import openmm
 from openmm import unit
 import ovito.io
@@ -14,6 +16,8 @@ logger_: Logger = None
 config_: Config = None
 
 def create_simulation() -> Tuple[Simulation, np.ndarray]:
+    """Creates a simulation object"""
+    
     logger_.info(f"Creating simulation data")
     data = SimulationData()
     
@@ -43,7 +47,11 @@ def create_simulation() -> Tuple[Simulation, np.ndarray]:
     
     
 
-def mean_next(simulation: Simulation, steps: int) -> Tuple[np.ndarray, np.ndarray]:
+def mean_next(simulation: Simulation, steps: int) -> Tuple[float, float, np.ndarray, np.ndarray]:
+    """Does next steps iterations and returns mean parameters
+    (potential energy, kinetic energy, positions, velocities)"""
+    
+    # Create parameters to mean
     state = simulation.get_state()
     p = state.getPositions(asNumpy=True)
     v = state.getVelocities(asNumpy=True)
@@ -52,12 +60,15 @@ def mean_next(simulation: Simulation, steps: int) -> Tuple[np.ndarray, np.ndarra
     velocities = np.zeros_like(v)
     
     for _ in range(steps):
+        # Run 1 step
         state = simulation.step(1)
+        # Add parameters to created variables
         positions = np.add(positions, p.value_in_unit(unit.angstrom))
         velocities = np.add(velocities, v.value_in_unit(unit.angstrom / unit.picosecond))
         u += state.getPotentialEnergy().value_in_unit(unit.elementary_charge * unit.volt / unit.mole)
         t += state.getKineticEnergy().value_in_unit(unit.elementary_charge * unit.volt / unit.mole)
         
+    # Mean parameters
     positions /= steps
     velocities /= steps
     u /= steps
@@ -73,57 +84,64 @@ def dump(u: float,
          types: np.ndarray,
          cell,
          step: int):
+    """Writes dumps of energies and positions"""
+    
     data = ovito.data.DataCollection()
     
+    # Get cell
     data_cell = ovito.data.SimulationCell(pbc=(True, True, True))
     data_cell[:, :3] = cell
     
+    # Set cell
     data.objects.append(data_cell)
 
+    # Set positions, velocities and types
     particles = ovito.data.Particles()
     particles.create_property("Position", data=positions)
     particles.create_property("Velocity", data=velocities)
     particles.create_property("Particle Type", data=types)
     
+    # Add data to data object
     data.objects.append(particles)
 
+    # Export
     ovito.io.export_file(
         data,
         config_.TRAJECTORY_PATH(step),
         "lammps/dump",
-        columns=[
-            "Particle Identifier",
-            "Particle Type",
-            "Position.X",
-            "Position.Y",
-            "Position.Z",
-            "Velocity.X",
-            "Velocity.Y",
-            "Velocity.Z"
-        ]
+        columns=config_.TRAJECTORY_COLUMNS
     )
     
+    # Create energy dump file on first dump
     if not os.path.exists(config_.ENERGY_PATH):
         with open(config_.ENERGY_PATH, "w") as f:
             f.write("step,u,t,e\n")
-            
+    
+    # Append new line to energy dump file
     with open(config_.ENERGY_PATH, "a") as f:
         f.write(f"{step},{u},{t},{u+t}\n")
 
 
-def run(config: Config, logger: Logger, sim_bar: tqdm, proc_bar: tqdm):
+def run(config: Config, logger: Logger, sim_bar: tqdm, connection: Connection):
+    """Runs simulation and data processing"""
+    
+    # Set global logger and config
     global logger_, config_
     logger_= logger
     config_ = config
     
+    # Create simulation
     simulation, types = create_simulation()
     
+    # Variable to count saved checkpoints
     saved_checkpoints = 0
     
     logger_.info("Starting simulation")
     for i in range(0, config_.RUN_STEPS, config_.AVERAGE_STEPS):
-        # run
+        # Get next mean values
         u, t, positions, velocities = mean_next(simulation, config_.AVERAGE_STEPS)
+        
+        # Dump mean values
         dump(u,
              t,
              positions,
@@ -132,19 +150,25 @@ def run(config: Config, logger: Logger, sim_bar: tqdm, proc_bar: tqdm):
              simulation.get_state().getPeriodicBoxVectors(asNumpy=True).value_in_unit(openmm.unit.angstrom),
              i)
         
-        sim_bar.update(1)
-        
+        # Save new checkpoint if necessary
         if i // config_.CHECKPOINT_STEPS >= saved_checkpoints:
             saved_checkpoints += 1
             with open(config_.CHECKPOINT_PATH(i), "wb") as f:
                 f.write(simulation.context.createCheckpoint())
         
+        # Update progress bar
+        sim_bar.update(1)
+    else:
+        # Save last checkpoint
+        with open(config_.CHECKPOINT_PATH(config_.RUN_STEPS - 1), "wb") as f:
+                f.write(simulation.context.createCheckpoint())
+        
+    # close simulation bar
     sim_bar.close()
-    proc_bar.close()
-        
-        # process
-        
-        # dump
+    
+    connection.send(None)
+    
+    logger.info("Simulation finished")
         
         
         

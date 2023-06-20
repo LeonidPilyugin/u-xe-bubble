@@ -2,7 +2,7 @@
 import sys
 import os
 from logging import Logger
-from multiprocessing import Process, Value
+from multiprocessing import Process, Pipe
 from typing import List, Tuple
 from datetime import timedelta
 import ovito.io
@@ -15,6 +15,7 @@ from simulation import run
 from utils import create_logger, time_ns
 from config import configs, Config
 from random import random
+from analysis import start_analyze
  
 
 def create_tree(config: Config):
@@ -38,13 +39,14 @@ def create_tree(config: Config):
         config.THERMO_DIR,
         config.LOG_DIR,
         config.TRAJECTORY_DIR,
+        config.ANALYSIS_DIR,
     ]: os.mkdir(dir)
     
     
-def start(config: Config, sim_bar: tqdm, proc_bar: tqdm):
+def start(config: Config, sim_bar: tqdm, analyze_bar: tqdm):
     """Runs simulation"""
     
-    logger = create_logger(config)
+    logger = create_logger(config, "main")
     
     logger.info("Starting simulation")
     
@@ -57,7 +59,7 @@ def start(config: Config, sim_bar: tqdm, proc_bar: tqdm):
     logger.info(f"System creation took {timedelta(seconds=t // 1e9)}")
     
     logger.info("Starting running simulation")
-    t = time_ns(run, config, logger, sim_bar, proc_bar)[0]
+    t = time_ns(run, config, logger, sim_bar, analyze_bar)[0]
     logger.info(f"Simulation running took {timedelta(seconds=t // 1e9)}")
     
     logger.info("Simulation finished")
@@ -70,24 +72,42 @@ if __name__ == "__main__":
     
     for config in configs.values():
         create_tree(config)
+    
+    
+    analyze_bar = tqdm(total=sum([config.RUN_STEPS // config.AVERAGE_STEPS for config in configs.values()]))
+    analyze_bar.set_description(f"Analyzing progress")
         
     for name, config in configs.items():
         sim_bar = tqdm(total=config.RUN_STEPS // config.AVERAGE_STEPS)
         sim_bar.set_description(f"{name} simulation progress")
-        proc_bar = tqdm(total=config.RUN_STEPS // config.AVERAGE_STEPS)
-        proc_bar.set_description(f"{name} processing progress")
+        
+        parent_connection, child_connection = Pipe()
         process = Process(target=start,
                           args=(config,
                                 sim_bar,
-                                proc_bar, ),
+                                child_connection),
                           name=name)
         
-        processes.append(process)
+        processes.append((process, parent_connection, config))
         
-    for p in processes:
+    for p, _, _ in processes:
         p.start()
         
-    for p in processes:
+    
+    # Analyzing each process
+    for process, connection, config in processes:
+        logger = create_logger(config, "analysis")
+        
+        logger.info(f"Analysing started")
+        t = time_ns(start_analyze, config, logger, connection, analyze_bar)[0]
+        logger.info(f"Analysing took {timedelta(seconds=t // 1e9)}")
+        
+        logger.info(f"Analysing finished")
+    
+    analyze_bar.close()
+        
+    # Join all processes
+    for p, _, _ in processes:
         p.join()
         
     print("Script finished")
