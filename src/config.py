@@ -1,11 +1,11 @@
-import os
-import sys
 import logging
-from inspect import isfunction
-from dataclasses import dataclass, field
-from typing import Dict, Any, List
-from simtk import unit
-from os.path import abspath, join
+import os.path as path
+from dataclasses import dataclass
+from dataclasses import field
+from typing import Dict
+from typing import Any
+from typing import List
+from openmm import unit as un
 
 @dataclass
 class Config:
@@ -16,13 +16,13 @@ class Config:
     
     # configuration
     RANDOM_SEED: int = 10
-    TEMPERATURE: unit.Quantity = 1400 * unit.kelvin
-    LATTICE_PARAMETER: unit.Quantity = 3.5449 * unit.angstroms
-    BOX_SIZE: unit.Quantity = 20 * LATTICE_PARAMETER
-    RADIUS: unit.Quantity = 2.2 * LATTICE_PARAMETER
+    TEMPERATURE: un.Quantity = 1400 * un.kelvin
+    LATTICE_PARAMETER: un.Quantity = 3.5449 * un.angstroms
+    BOX_SIZE: un.Quantity = 20 * LATTICE_PARAMETER
+    RADIUS: un.Quantity = 2.2 * LATTICE_PARAMETER
     ADDITIONAL_ATOMS: int = 0
     OCCUPANCY: float = 10/27
-    TIME_STEP: unit.Quantity = 1 * unit.femtoseconds
+    TIME_STEP: un.Quantity = 1 * un.femtoseconds
     PARTICLE_TYPE_DICT: Dict[int, int] = field(default_factory=lambda: {1: 1, 2: 3})
     
     # simulation
@@ -30,134 +30,137 @@ class Config:
     AVERAGE_STEPS: int = 1 # 1000
     CHECKPOINT_STEPS: int = 10
     
-    # Absolute path of directory with this program
-    ROOT: str = join("/", *abspath(__file__).split("/")[:-2])
+    # absolute path of directory with this program
+    ROOT: str = path.join("/", *path.abspath(__file__).split("/")[:-2])
     
-    # Absolute path of directory with simulations
-    SIMULATIONS_DIR: str = join(ROOT, "result")
+    # absolute path of directory with simulations
+    SIMULATIONS_DIR: str = path.join(ROOT, "result")
     
-    # Name of subdirectory with current simulation results
+    # name of subdirectory with current simulation results
     SIMULATION_NAME: str = ""
     
     @property
     def SIMULATION_DIR(self) -> str:
         """Absolute path of directory with current simulation"""
-        return join(self.SIMULATIONS_DIR, self.SIMULATION_NAME)
+        return path.join(self.SIMULATIONS_DIR, self.SIMULATION_NAME)
     
-    # Directory with potentials
-    POTENTIAL_DIR: str = join(ROOT, "potentials")
-    # Potential file for OpenMM
-    POTENTIAL_PATH: str = join(POTENTIAL_DIR, "output-gb.xml")
-    # Potential file for LAMMPS
-    EAM_POTENTIAL_PATH: str = join(POTENTIAL_DIR, "U_Mo_Xe.2013.eam.alloy")
+    # directory with potentials
+    POTENTIAL_DIR: str = path.join(ROOT, "potentials")
+    # potential file for OpenMM
+    POTENTIAL_PATH: str = path.join(POTENTIAL_DIR, "output-gb.xml")
+    # potential file for LAMMPS
+    EAM_POTENTIAL_PATH: str = path.join(POTENTIAL_DIR, "U_Mo_Xe.2013.eam.alloy")
     
-    # Name of configuration file
+    # name of configuration file
     CONFIG_NAME: str = "config"
-    # Extention of 
+    # extention of configuration file
     CONFIG_EXT: str = ".txt"
     
     @property
     def CONFIG_PATH(self) -> str:
         """Absolute path of file with configs of simulation"""
-        return join(self.SIMULATION_DIR, self.CONFIG_NAME + self.CONFIG_EXT)
+        return path.join(self.SIMULATION_DIR, self.CONFIG_NAME + self.CONFIG_EXT)
     
     
     @property
     def CONFIGURATION_DIR(self) -> str:
         """Absolute path of directory with configuration system"""
-        return join(self.SIMULATION_DIR, "configuration")
+        return path.join(self.SIMULATION_DIR, "configuration")
     
-    # Extention of configuration system
+    # extention of configuration system
     CONFIGURATION_EXT: str = ".atom"
-    # Extention of reference system
+    # extention of reference system
     REFERENCE_EXT: str = ".atom"
     
     @property
     def CONFIGURATION_PATH(self) -> str:
-        return join(self.CONFIGURATION_DIR, "configuration" + self.CONFIGURATION_EXT)
+        """Absolute path of configuration file"""
+        return path.join(self.CONFIGURATION_DIR, "configuration" + self.CONFIGURATION_EXT)
     
     @property
     def REFERENCE_PATH(self) -> str:
-        return join(self.CONFIGURATION_DIR, "reference" + self.REFERENCE_EXT)
+        """Absolute path of reference file"""
+        return path.join(self.CONFIGURATION_DIR, "reference" + self.REFERENCE_EXT)
     
     
     @property
     def CHECKPOINT_DIR(self) -> str:
         """Absolute path of directory with checkpoints"""
-        return join(self.SIMULATION_DIR, "checkpoints")
+        return path.join(self.SIMULATION_DIR, "checkpoints")
     
-    # Extention of checkpoint file
+    # extention of checkpoint file
     CHECKPOINT_EXT: str = ".checkpoint"
     
     def CHECKPOINT_PATH(self, n: int) -> str:
         """Absolute path of n step of checkpoint file"""
-        return join(self.CHECKPOINT_DIR, str(n) + self.CHECKPOINT_EXT)
+        return path.join(self.CHECKPOINT_DIR, str(n) + self.CHECKPOINT_EXT)
     
     
     @property
     def THERMO_DIR(self) -> str:
         """Absolute path of directory with thermo info"""
-        return join(self.SIMULATION_DIR, "thermo")
+        return path.join(self.SIMULATION_DIR, "thermo")
     
-    # Name of energy file
+    # name of energy file
     ENERGY_NAME: str = "energy"
-    # Extention of energy file
+    # extention of energy file
     ENERGY_EXT: str = ".csv"
     
     @property
     def ENERGY_PATH(self) -> str:
         """Absolute path of file with energies"""
-        return join(self.THERMO_DIR, self.ENERGY_NAME + self.ENERGY_EXT)
+        return path.join(self.THERMO_DIR, self.ENERGY_NAME + self.ENERGY_EXT)
     
     
     @property
     def LOG_DIR(self) -> str:
         """Absolute path of directory with logs"""
-        return join(self.SIMULATION_DIR, "log")
+        return path.join(self.SIMULATION_DIR, "log")
     
-    # Name of file with main logs
+    # name of file with main logs
     MAIN_LOG_NAME: str = "main"
-    # Name of file with main logs
+    # name of file with main logs
     ANALYSIS_LOG_NAME: str = "analysis"
-    # Name of file with LAMMPS logs
+    # name of file with LAMMPS logs
     LAMMPS_LOG_NAME: str = "lammps"
-    # Extention of logs files
+    # extention of logs files
     LOG_EXT: str = ".log"
     
     @property
     def ANALYSIS_LOG_PATH(self) -> str:
         """Absolute path of file with main logs"""
-        return join(self.LOG_DIR, self.ANALYSIS_LOG_NAME + self.LOG_EXT)
+        return path.join(self.LOG_DIR, self.ANALYSIS_LOG_NAME + self.LOG_EXT)
     
     @property
     def MAIN_LOG_PATH(self) -> str:
         """Absolute path of file with analysis logs"""
-        return join(self.LOG_DIR, self.MAIN_LOG_NAME + self.LOG_EXT)
+        return path.join(self.LOG_DIR, self.MAIN_LOG_NAME + self.LOG_EXT)
     
     @property
     def LAMMPS_LOG_PATH(self) -> str:
         """Absolute path of file with LAMPS logs"""
-        return join(self.LOG_DIR, self.LAMMPS_LOG_NAME + self.LOG_EXT)
+        return path.join(self.LOG_DIR, self.LAMMPS_LOG_NAME + self.LOG_EXT)
     
     
     @property
     def TRAJECTORY_DIR(self) -> str:
         """Absolute path of directory with trajectories"""
-        return join(self.SIMULATION_DIR, "trajectory")
+        return path.join(self.SIMULATION_DIR, "trajectory")
     
-    # Extention of trajectory file
+    # extention of trajectory file
     TRAJECTORY_EXT: str = ".trj"
     
     
     @property
     def ANALYSIS_DIR(self) -> str:
         """Absolute path of directory with analysis results"""
-        return join(self.SIMULATION_DIR, "analysis")
+        return path.join(self.SIMULATION_DIR, "analysis")
     
     def TRAJECTORY_PATH(self, n: int) -> str:
         """Absolute path of n step of trajectory file"""
-        return join(self.TRAJECTORY_DIR, str(n) + self.TRAJECTORY_EXT)
+        return path.join(self.TRAJECTORY_DIR, str(n) + self.TRAJECTORY_EXT)
     
+    # columns in trajectory file
     TRAJECTORY_COLUMNS: List[str] = field(default_factory=lambda: [
         "Particle Identifier",
         "Particle Type",
@@ -172,6 +175,7 @@ class Config:
     
     # log mode
     LOG_MODE: int = logging.INFO
+    # log format
     LOG_FORMAT: str = "%(name)s -- %(levelname)s : %(message)s"
     
     
@@ -187,7 +191,7 @@ class Config:
 
 configs = {
     "CPU1": Config(SIMULATION_NAME="cpu1"),
-    "CPU2": Config(SIMULATION_NAME="cpu2", TEMPERATURE=1000 * unit.kelvins),
+    "CPU2": Config(SIMULATION_NAME="cpu2", TEMPERATURE=1000 * un.kelvins),
     # "HIP": Config(PLATFORM_NAME = "HIP", PLATFORM_PROPERTIES = {"HIP": {"DeviceIndex": 0}})
 }
 

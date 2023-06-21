@@ -1,7 +1,8 @@
-from logging import getLogger, Logger, FileHandler, Formatter
 import time
-import functools
-import datetime
+from logging import getLogger
+from logging import Logger
+from logging import FileHandler
+from logging import Formatter
 from config import Config
 
 

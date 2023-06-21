@@ -1,19 +1,17 @@
-import sys
-import os
+import openmm.unit as un
+from lammps import lammps
 from logging import Logger
-import lammps
-import openmm.unit as unit
 from config import Config
 from logging import Logger
 
 logger_: Logger = None
 config_: Config = None
 
-# logger
+
 def create_system(config: Config, logger: Logger):
     """Creates config_uration file and reference file"""
     
-    # Set global logger and config_
+    # set global logger and config
     global logger_, config_
     logger_= logger
     config_ = config
@@ -26,11 +24,11 @@ units metal
 dimension 3
 boundary p p p
 
-variable A equal {config_.LATTICE_PARAMETER.value_in_unit(unit.angstrom)}
-variable L equal {config_.BOX_SIZE.value_in_unit(unit.angstrom)}
-variable T equal {config_.TEMPERATURE.value_in_unit(unit.kelvin)}
+variable A equal {config_.LATTICE_PARAMETER.value_in_unit(un.angstrom)}
+variable L equal {config_.BOX_SIZE.value_in_unit(un.angstrom)}
+variable T equal {config_.TEMPERATURE.value_in_unit(un.kelvin)}
 variable F equal {1.0 - config_.OCCUPANCY}
-variable r equal {config_.RADIUS.value_in_unit(unit.angstrom)}
+variable r equal {config_.RADIUS.value_in_unit(un.angstrom)}
 variable N equal {config_.ADDITIONAL_ATOMS}
 
 region SIMULATION_BOX block 0 $L 0 $L 0 $L units box
@@ -60,12 +58,12 @@ pair_coeff * * \"{config_.EAM_POTENTIAL_PATH}\" U Xe
 
 minimize 1.0e-4 1.0e-6 1000 10000
 
-velocity all create {config_.TEMPERATURE.value_in_unit(unit.kelvin)} {config_.RANDOM_SEED}
+velocity all create {config_.TEMPERATURE.value_in_unit(un.kelvin)} {config_.RANDOM_SEED}
 
 write_dump all custom \"{config_.CONFIGURATION_PATH}\" id type mass x y z vx vy vz
 """
     
-    lmp = lammps.lammps(cmdargs=["-log", config_.LAMMPS_LOG_PATH, "-screen", "none"])
+    lmp = lammps(cmdargs=["-log", config_.LAMMPS_LOG_PATH, "-screen", "none"])
     logger_.debug(f"LAMMPS version: {lmp.version()}")
     lmp.commands_string(script)
     logger_.info(f"System saved to \"{config_.CONFIGURATION_PATH}\"")
