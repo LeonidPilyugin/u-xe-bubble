@@ -74,7 +74,7 @@ def start(config: Config, sim_bar: tqdm, analyze_bar: tqdm):
     logger.info("Simulation finished")
     
     
-def start_analysis(processes: List[Process, Connection, Config], progressbar: tqdm):
+def start_analysis(processes: List[Tuple[Process, Connection, Config]], progressbar: tqdm):
     # analyzing each process
     for process, connection, config in processes:
         logger = create_logger(config, "analysis")
