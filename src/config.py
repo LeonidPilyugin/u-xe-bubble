@@ -253,7 +253,7 @@ write_dump all custom \"{self.CONFIGURATION_PATH}\" id type mass x y z vx vy vz
 configs = {
     "CPU1": Config(SIMULATION_NAME="cpu1"),
     "CPU2": Config(SIMULATION_NAME="cpu2", TEMPERATURE=1000 * un.kelvins),
-    # "HIP": Config(PLATFORM_NAME = "HIP", PLATFORM_PROPERTIES = {"HIP": {"DeviceIndex": 0}})
+    # "HIP": Config(SIMULATION_NAME="hip", PLATFORM_NAME = "HIP", PLATFORM_PROPERTIES = {"HIP": {"DeviceIndex": 0}})
 }
 
 # configuration

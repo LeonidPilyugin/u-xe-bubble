@@ -61,7 +61,7 @@ def start(config: Config, sim_bar: tqdm, analyze_bar: tqdm):
     
     if config.PLATFORM_NAME == "HIP":
         logger.info(f"Setting HIP_VISIBLE_DEVICES = {config.PLATFORM_PROPERTIES['HIP']['DeviceIndex']}")
-        os.environ["HIP_VISIBLE_DEVICES"] = config.PLATFORM_PROPERTIES["HIP"]["DeviceIndex"]
+        os.environ["HIP_VISIBLE_DEVICES"] = str(config.PLATFORM_PROPERTIES["HIP"]["DeviceIndex"])
     
     logger.info("Starting creating system")
     t = time_ns(create_system, config, logger)[0]
