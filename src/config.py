@@ -141,6 +141,18 @@ class Config:
         """Absolute path of file with LAMPS logs"""
         return path.join(self.LOG_DIR, self.LAMMPS_LOG_NAME + self.LOG_EXT)
     
+    # path to LAMMPS executable
+    LAMMPS_EXECUTABLE_PATH: str = ""
+    # name of LAMMPS script
+    LAMMPS_SCRIPT_NAME: str = "script"
+    # extention of LAMMPS script
+    LAMMPS_SCRIPT_EXT: str = ".lmp"
+    
+    @property
+    def LAMMPS_SCRIPT_PATH(self) -> str:
+        """Path to LAMMPS generating script"""
+        return path.join(self.CONFIGURATION_DIR, self.LAMMPS_SCRIPT_NAME + self.LAMMPS_SCRIPT_EXT)
+    
     
     @property
     def TRAJECTORY_DIR(self) -> str:
@@ -185,6 +197,55 @@ class Config:
             for attr, value in self.__dict__.items():
                 if not attr.startswith("_"):
                     f.write(f"{attr} = {value}\n")
+                    
+    @property
+    def LAMMPS_SCRIPT(self) -> str:
+        """Returns LAMMPS script"""
+        return \
+f"""# Script generated in u-xe-bubble program
+
+units metal
+dimension 3
+boundary p p p
+
+variable A equal {self.LATTICE_PARAMETER.value_in_unit(un.angstrom)}
+variable L equal {self.BOX_SIZE.value_in_unit(un.angstrom)}
+variable T equal {self.TEMPERATURE.value_in_unit(un.kelvin)}
+variable F equal {1.0 - self.OCCUPANCY}
+variable r equal {self.RADIUS.value_in_unit(un.angstrom)}
+variable N equal {self.ADDITIONAL_ATOMS}
+
+region SIMULATION_BOX block 0 $L 0 $L 0 $L units box
+
+create_box 2 SIMULATION_BOX
+
+region DEFFECT_IN  sphere $(lx/2) $(lx/2) $(lx/2) $r side in  units box
+region DEFFECT_OUT sphere $(lx/2) $(lx/2) $(lx/2) $r side out units box
+
+group U  type 1
+group Xe type 2
+
+lattice bcc $A
+create_atoms 1 region SIMULATION_BOX
+write_dump all atom \"{self.REFERENCE_PATH}\"
+delete_atoms region SIMULATION_BOX
+
+create_atoms 2 region DEFFECT_IN
+delete_atoms random fraction $F no all NULL {self.RANDOM_SEED}
+
+create_atoms 1 region DEFFECT_OUT
+delete_atoms random count $N no U NULL {self.RANDOM_SEED}
+create_atoms 1 random $N {self.RANDOM_SEED} DEFFECT_OUT
+
+pair_style eam/alloy
+pair_coeff * * \"{self.EAM_POTENTIAL_PATH}\" U Xe
+
+minimize 1.0e-4 1.0e-6 1000 10000
+
+velocity all create {self.TEMPERATURE.value_in_unit(un.kelvin)} {self.RANDOM_SEED}
+
+write_dump all custom \"{self.CONFIGURATION_PATH}\" id type mass x y z vx vy vz
+"""
                 
         
     

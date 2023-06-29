@@ -26,7 +26,7 @@ if __name__ == "__main__":
     process.start()
     
     # start analysis
-    start_analysis([process], analysis_bar)
+    start_analysis([(process, connection, config)], analysis_bar)
     
     # join simulation process
     process.join()

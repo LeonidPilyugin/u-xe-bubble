@@ -42,8 +42,7 @@ def set_modifiers():
     modifier = mod.WignerSeitzAnalysisModifier()
     modifier.reference = pln.FileSource()
     modifier.reference.load(config_.REFERENCE_PATH)
-    #modifier.reference.load("/home/leonid/github.com/LeonidPilyugin/u-xe-bubble/result/cpu1/configuration/reference.atom")
-    modifier.affine_mapping = mod.ReferenceConfigurationModifier.AffineMapping.ToReference
+    modifier.affine_mapping = pln.ReferenceConfigurationModifier.AffineMapping.ToReference
     modifier.per_type_occupancies = True
     pipeline_.modifiers.append(modifier)
     
