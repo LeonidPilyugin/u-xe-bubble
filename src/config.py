@@ -12,7 +12,7 @@ class Config:
     
     # platform
     PLATFORM_NAME: str = "CPU"
-    PLATFORM_PROPERTIES: Dict[str, Any] = field(default_factory=lambda:{})
+    PLATFORM_PROPERTIES: Dict[str, str] = field(default_factory=lambda:{})
     
     # configuration
     RANDOM_SEED: int = 10
@@ -143,6 +143,7 @@ class Config:
     
     # path to LAMMPS executable
     LAMMPS_EXECUTABLE_PATH: str = ""
+    # "/home/leonid/github.com/other/lammps/build/lmp"
     # name of LAMMPS script
     LAMMPS_SCRIPT_NAME: str = "script"
     # extention of LAMMPS script
@@ -253,7 +254,7 @@ write_dump all custom \"{self.CONFIGURATION_PATH}\" id type mass x y z vx vy vz
 configs = {
     "CPU1": Config(SIMULATION_NAME="cpu1"),
     "CPU2": Config(SIMULATION_NAME="cpu2", TEMPERATURE=1000 * un.kelvins),
-    # "HIP": Config(SIMULATION_NAME="hip", PLATFORM_NAME = "HIP", PLATFORM_PROPERTIES = {"HIP": {"DeviceIndex": 0}})
+    #"HIP": Config(SIMULATION_NAME="HIP", PLATFORM_NAME = "HIP", PLATFORM_PROPERTIES = {"DeviceIndex": "0"}),
 }
 
 # configuration

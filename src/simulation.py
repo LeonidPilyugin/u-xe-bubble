@@ -1,10 +1,11 @@
+import os
 import numpy as np
 import os.path as path
 import openmm as mm
 from typing import Tuple
 from tqdm import tqdm
 from logging import Logger
-from multiprocessing.connection import Connection
+from threading import Event
 from numpy import ndarray
 from openmm import unit as un
 from ovito import data as odata
@@ -40,6 +41,11 @@ def create_simulation() -> Tuple[Simulation, ndarray]:
     
     logger_.info(f"Creating simulation")
     types = data.types
+    
+    if config_.PLATFORM_NAME == "HIP":
+        logger_.info(f"Setting HIP_VISIBLE_DEVICES = {config_.PLATFORM_PROPERTIES['DeviceIndex']}")
+        os.environ["HIP_VISIBLE_DEVICES"] = config_.PLATFORM_PROPERTIES["DeviceIndex"]
+    
     simulation = data.make_simulation(config_.PLATFORM_NAME, config_.PLATFORM_PROPERTIES)
     
     logger_.info("Simulation created")
@@ -123,7 +129,7 @@ def dump(u: float,
         f.write(f"{step},{u},{t},{u+t}\n")
 
 
-def run(config: Config, logger: Logger, sim_bar: tqdm, connection: Connection):
+def run(config: Config, logger: Logger, sim_bar: tqdm, event: Event):
     """Runs simulation and data processing"""
     
     # set global logger and config
@@ -167,7 +173,7 @@ def run(config: Config, logger: Logger, sim_bar: tqdm, connection: Connection):
     # close simulation bar
     sim_bar.close()
     
-    connection.send(None)
+    event.set()
     
     logger.info("Simulation finished")
     

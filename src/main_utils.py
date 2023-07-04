@@ -1,9 +1,9 @@
 import os
+import multiprocessing
 from typing import List
 from typing import Tuple
 from multiprocessing import Process
-from multiprocessing import Pipe
-from multiprocessing.connection import Connection
+from threading import Event
 from datetime import timedelta
 from tqdm import tqdm
 from config import Config
@@ -37,19 +37,19 @@ def create_tree(config: Config):
         config.ANALYSIS_DIR,
     ]: os.mkdir(dir)
     
-def create_process(config: Config, name: str) -> Tuple[Process, Connection]:
+    
+def create_process(config: Config, name: str) -> Tuple[Process, Event]:
     sim_bar = tqdm(total=config.RUN_STEPS // config.AVERAGE_STEPS)
     sim_bar.set_description(f"{name} simulation progress")
     
-    parent_connection, child_connection = Pipe()
+    event = multiprocessing.Event()
     process = Process(target=start,
                         args=(config,
                               sim_bar,
-                              child_connection),
+                              event),
                         name=name)
     
-    return process, parent_connection
-    
+    return process, event
     
     
 def start(config: Config, sim_bar: tqdm, analyze_bar: tqdm):
@@ -58,10 +58,6 @@ def start(config: Config, sim_bar: tqdm, analyze_bar: tqdm):
     logger = create_logger(config, "main")
     
     logger.info("Starting simulation")
-    
-    if config.PLATFORM_NAME == "HIP":
-        logger.info(f"Setting HIP_VISIBLE_DEVICES = {config.PLATFORM_PROPERTIES['HIP']['DeviceIndex']}")
-        os.environ["HIP_VISIBLE_DEVICES"] = str(config.PLATFORM_PROPERTIES["HIP"]["DeviceIndex"])
     
     logger.info("Starting creating system")
     t = time_ns(create_system, config, logger)[0]
@@ -74,13 +70,13 @@ def start(config: Config, sim_bar: tqdm, analyze_bar: tqdm):
     logger.info("Simulation finished")
     
     
-def start_analysis(processes: List[Tuple[Process, Connection, Config]], progressbar: tqdm):
+def start_analysis(processes: List[Tuple[Process, Event, Config]], progressbar: tqdm):
     # analyzing each process
-    for process, connection, config in processes:
+    for process, event, config in processes:
         logger = create_logger(config, "analysis")
         
         logger.info(f"Analysing started")
-        t = time_ns(start_analyze, config, logger, connection, progressbar)[0]
+        t = time_ns(start_analyze, config, logger, event, progressbar)[0]
         logger.info(f"Analysing took {timedelta(seconds=t // 1e9)}")
         
         logger.info(f"Analysing finished")

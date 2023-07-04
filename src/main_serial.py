@@ -20,13 +20,13 @@ if __name__ == "__main__":
     analysis_bar = create_analysis_bar([config])
     
     # create process
-    process, connection = create_process(config, name)
+    process, event = create_process(config, name)
     
     # start process
     process.start()
     
     # start analysis
-    start_analysis([(process, connection, config)], analysis_bar)
+    start_analysis([(process, event, config)], analysis_bar)
     
     # join simulation process
     process.join()

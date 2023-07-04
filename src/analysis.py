@@ -1,6 +1,6 @@
 import os
 import os.path as path
-from multiprocessing.connection import Connection
+from threading import Event
 from tqdm import tqdm
 from logging import Logger
 from ovito import io as oio
@@ -11,7 +11,7 @@ from config import Config
 config_: Config = None
 pipeline_: pln.Pipeline = None
 
-def files(connection: Connection):
+def files(event: Event):
     """Iterates throw files with trajectory in increasing order"""
     
     last_returned = -1
@@ -29,7 +29,7 @@ def files(connection: Connection):
             finish_flag = True
             
         # if there is signal to stop, run one more iteration
-        flag = connection.poll(timeout=1)
+        flag = event.wait(timeout=1)
         
     return StopIteration
 
@@ -80,7 +80,7 @@ def process(filepath: str):
         f.write(f"{count}\n")
     
 
-def start_analyze(config: Config, logger: Logger, connection: Connection, progressbar: tqdm):
+def start_analyze(config: Config, logger: Logger, event: Event, progressbar: tqdm):
     """Starts analysing simulation"""
     
     # set global logger and config
@@ -89,7 +89,7 @@ def start_analyze(config: Config, logger: Logger, connection: Connection, progre
     config_ = config
     
     # process each file
-    for filepath in files(connection):
+    for filepath in files(event):
         process(filepath)
         progressbar.update(1)
         
