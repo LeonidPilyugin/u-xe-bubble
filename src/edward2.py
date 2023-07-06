@@ -8,6 +8,8 @@ import ovito.data
 
 import os
 
+import numpy as np
+
 class SimulationData:
     def __init__(self):
         self.forces = []
@@ -180,3 +182,40 @@ class Simulation:
                 "Velocity.Z"
             ]
         )
+        
+        
+    def mean_next(self, steps, create_checkpoint = False):
+        """Means"""
+        
+        state = self.get_state()
+        
+        p = state.getPositions(asNumpy=True)
+        v = state.getVelocities(asNumpy=True)
+        u = t = 0
+        positions = np.zeros_like(p)
+        velocities = np.zeros_like(v)
+
+        for _ in range(steps):
+            # run 1 step
+            state = self.step(1)
+            # add parameters to created variables
+            positions = np.add(positions, p.value_in_unit(unit.angstrom))
+            velocities = np.add(velocities, v.value_in_unit(unit.angstrom / unit.picosecond))
+            u += state.getPotentialEnergy().value_in_unit(unit.elementary_charge * unit.volt / unit.mole)
+            t += state.getKineticEnergy().value_in_unit(unit.elementary_charge * unit.volt / unit.mole)
+        
+        # mean parameters
+        positions /= steps
+        velocities /= steps
+        u /= steps
+        t /= steps
+        
+        checkpoint = self.context.createCheckpoint() if create_checkpoint else None
+        
+        return u, t, positions, velocities, state, checkpoint
+
+
+    def mean_next_async(self, steps, checkpoint = False):
+        return self.executor.submit(self.mean_next, steps, checkpoint)
+    
+    

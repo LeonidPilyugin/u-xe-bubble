@@ -142,8 +142,7 @@ class Config:
         return path.join(self.LOG_DIR, self.LAMMPS_LOG_NAME + self.LOG_EXT)
     
     # path to LAMMPS executable
-    LAMMPS_EXECUTABLE_PATH: str = ""
-    # "/home/leonid/github.com/other/lammps/build/lmp"
+    LAMMPS_EXECUTABLE_PATH: str = "/home/leonid/github.com/other/lammps/build/lmp"
     # name of LAMMPS script
     LAMMPS_SCRIPT_NAME: str = "script"
     # extention of LAMMPS script

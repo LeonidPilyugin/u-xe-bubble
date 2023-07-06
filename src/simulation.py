@@ -1,11 +1,9 @@
 import os
-import numpy as np
 import os.path as path
 import openmm as mm
 from typing import Tuple
 from tqdm import tqdm
 from logging import Logger
-from threading import Event
 from numpy import ndarray
 from openmm import unit as un
 from ovito import data as odata
@@ -13,6 +11,7 @@ from ovito import io as oio
 from edward2 import SimulationData
 from edward2 import Simulation
 from config import Config
+from analysis import analize
 
 logger_: Logger = None
 config_: Config = None
@@ -51,37 +50,6 @@ def create_simulation() -> Tuple[Simulation, ndarray]:
     logger_.info("Simulation created")
     
     return simulation, types
-    
-    
-
-def mean_next(simulation: Simulation, steps: int) -> Tuple[float, float, np.ndarray, np.ndarray]:
-    """Does next steps iterations and returns mean parameters
-    (potential energy, kinetic energy, positions, velocities)"""
-    
-    # create parameters to mean
-    state = simulation.get_state()
-    p = state.getPositions(asNumpy=True)
-    v = state.getVelocities(asNumpy=True)
-    u = t = 0
-    positions = np.zeros_like(p)
-    velocities = np.zeros_like(v)
-    
-    for _ in range(steps):
-        # run 1 step
-        state = simulation.step(1)
-        # add parameters to created variables
-        positions = np.add(positions, p.value_in_unit(un.angstrom))
-        velocities = np.add(velocities, v.value_in_unit(un.angstrom / un.picosecond))
-        u += state.getPotentialEnergy().value_in_unit(un.elementary_charge * un.volt / un.mole)
-        t += state.getKineticEnergy().value_in_unit(un.elementary_charge * un.volt / un.mole)
-        
-    # mean parameters
-    positions /= steps
-    velocities /= steps
-    u /= steps
-    t /= steps
-    
-    return u, t, positions, velocities
 
 
 def dump(u: float,
@@ -89,8 +57,8 @@ def dump(u: float,
          positions: ndarray,
          velocities: ndarray,
          types: ndarray,
-         cell,
-         step: int):
+         step: int,
+         cell):
     """Writes dumps of energies and positions"""
     
     data = odata.DataCollection()
@@ -98,7 +66,7 @@ def dump(u: float,
     # get cell
     data_cell = odata.SimulationCell(pbc=(True, True, True))
     data_cell[:, :3] = cell
-    
+
     # set cell
     data.objects.append(data_cell)
 
@@ -127,9 +95,29 @@ def dump(u: float,
     # append new line to energy dump file
     with open(config_.ENERGY_PATH, "a") as f:
         f.write(f"{step},{u},{t},{u+t}\n")
+        
+        
+def save_checkpoint(step, checkpoint):
+    with open(config_.CHECKPOINT_PATH(step), "wb") as f:
+        f.write(checkpoint)
+        
+        
+def process(step: int, u: ndarray, t: ndarray, p: ndarray,
+            v: ndarray, types: ndarray, checkpoint, cell):
+    
+    # dump
+    dump(u, t, p, v, types, step, cell)
+    
+    # save checkpoint if necessary
+    if checkpoint is not None:
+        save_checkpoint(step, checkpoint)
+        
+    # analyze
+    analize(config_, logger_, config_.TRAJECTORY_PATH(step))
+    
 
 
-def run(config: Config, logger: Logger, sim_bar: tqdm, event: Event):
+def run(config: Config, logger: Logger):
     """Runs simulation and data processing"""
     
     # set global logger and config
@@ -140,40 +128,30 @@ def run(config: Config, logger: Logger, sim_bar: tqdm, event: Event):
     # create simulation
     simulation, types = create_simulation()
     
-    # variable to count saved checkpoints
     saved_checkpoints = 0
+    need_checkpoint = False
     
     logger_.info("Starting simulation")
-    for i in range(0, config_.RUN_STEPS, config_.AVERAGE_STEPS):
-        # get next mean values
-        u, t, positions, velocities = mean_next(simulation, config_.AVERAGE_STEPS)
-        
-        # dump mean values
-        dump(u,
-             t,
-             positions,
-             velocities,
-             types,
-             simulation.get_state().getPeriodicBoxVectors(asNumpy=True).value_in_unit(un.angstrom),
-             i)
-        
-        # save new checkpoint if necessary
-        if i // config_.CHECKPOINT_STEPS >= saved_checkpoints:
-            saved_checkpoints += 1
-            with open(config_.CHECKPOINT_PATH(i), "wb") as f:
-                f.write(simulation.context.createCheckpoint())
-        
-        # update progress bar
-        sim_bar.update(1)
-    else:
-        # save last checkpoint
-        with open(config_.CHECKPOINT_PATH(config_.RUN_STEPS - 1), "wb") as f:
-                f.write(simulation.context.createCheckpoint())
-        
-    # close simulation bar
-    sim_bar.close()
+    # get first data
+    result = simulation.mean_next(config_.AVERAGE_STEPS)
     
-    event.set()
+    for i in tqdm(range(0, config_.RUN_STEPS, config_.AVERAGE_STEPS)):
+        # start getting next data
+        future = simulation.mean_next_async(config_.AVERAGE_STEPS, need_checkpoint)
+        if need_checkpoint: need_checkpoint = False
+        
+        # process data
+        u, t, p, v, s, c = result
+        process(i, u, t, p, v, types, c,
+                s.getPeriodicBoxVectors(asNumpy=True).value_in_unit(un.angstrom))
+        
+        # decide to generate or not checkpoint
+        if i // config_.CHECKPOINT_STEPS >= saved_checkpoints:
+            need_checkpoint = True
+            saved_checkpoints += 1
+        
+        # get result
+        result = future.result()
     
     logger.info("Simulation finished")
     

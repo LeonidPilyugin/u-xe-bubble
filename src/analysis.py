@@ -1,7 +1,4 @@
-import os
 import os.path as path
-from threading import Event
-from tqdm import tqdm
 from logging import Logger
 from ovito import io as oio
 from ovito import modifiers as mod
@@ -10,28 +7,6 @@ from config import Config
 
 config_: Config = None
 pipeline_: pln.Pipeline = None
-
-def files(event: Event):
-    """Iterates throw files with trajectory in increasing order"""
-    
-    last_returned = -1
-    flag = False
-    finish_flag = False
-    
-    while not finish_flag:
-        for iteration in sorted(list(map(lambda x: int(path.basename(x).split(".")[0]), 
-                        os.listdir(config_.TRAJECTORY_DIR))))[:None if flag else -1]:
-            if iteration > last_returned:
-                last_returned = iteration
-                yield path.join("/", config_.TRAJECTORY_PATH(iteration))
-        
-        if flag:
-            finish_flag = True
-            
-        # if there is signal to stop, run one more iteration
-        flag = event.wait(timeout=1)
-        
-    return StopIteration
 
 def set_modifiers():
     """Sets modifiers to pipeline"""
@@ -64,9 +39,11 @@ def create_pipeline(filepath):
     set_modifiers()
     
 
-def process(filepath: str):
+def analize(config: Config, logger: Logger, filepath: str):
     """Processes frame"""
-    global pipeline_
+    global pipeline_, logger_, config_
+    logger_ = logger
+    config_ = config
     
     # create pipeline or load data if pipeline exists
     if pipeline_ is None:
@@ -78,18 +55,4 @@ def process(filepath: str):
     
     with open(path.join(config_.ANALYSIS_DIR, "count"), "a") as f:
         f.write(f"{count}\n")
-    
-
-def start_analyze(config: Config, logger: Logger, event: Event, progressbar: tqdm):
-    """Starts analysing simulation"""
-    
-    # set global logger and config
-    global logger_, config_
-    logger_= logger
-    config_ = config
-    
-    # process each file
-    for filepath in files(event):
-        process(filepath)
-        progressbar.update(1)
         
