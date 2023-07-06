@@ -28,18 +28,17 @@ def set_modifiers():
     
     
 
-def create_pipeline(filepath):
+def create_pipeline(source):
     """Creates pipeline"""
     global pipeline_
     
     logger_.info("Creating pipeline")
-    pipeline_ = oio.import_file(filepath,
-                                columns=config_.TRAJECTORY_COLUMNS)
+    pipeline_ = pln.Pipeline(source=source)
     logger_.info("Setting modifiers")
     set_modifiers()
     
 
-def analize(config: Config, logger: Logger, filepath: str):
+def analize(config: Config, logger: Logger, data, u, t):
     """Processes frame"""
     global pipeline_, logger_, config_
     logger_ = logger
@@ -47,9 +46,9 @@ def analize(config: Config, logger: Logger, filepath: str):
     
     # create pipeline or load data if pipeline exists
     if pipeline_ is None:
-        create_pipeline(filepath)
+        create_pipeline(pln.StaticSource(data=data))
     else:
-        pipeline_.source.load(filepath)
+        pipeline_.source = pln.StaticSource(data=data)
     
     count = pipeline_.compute().attributes["ExpressionSelection.count"]
     

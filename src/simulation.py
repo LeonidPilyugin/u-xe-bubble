@@ -96,24 +96,26 @@ def dump(u: float,
     with open(config_.ENERGY_PATH, "a") as f:
         f.write(f"{step},{u},{t},{u+t}\n")
         
+    return data
+        
         
 def save_checkpoint(step, checkpoint):
     with open(config_.CHECKPOINT_PATH(step), "wb") as f:
         f.write(checkpoint)
         
         
-def process(step: int, u: ndarray, t: ndarray, p: ndarray,
+def process(step: int, u: float, t: float, p: ndarray,
             v: ndarray, types: ndarray, checkpoint, cell):
     
     # dump
-    dump(u, t, p, v, types, step, cell)
+    data = dump(u, t, p, v, types, step, cell)
     
     # save checkpoint if necessary
     if checkpoint is not None:
         save_checkpoint(step, checkpoint)
         
     # analyze
-    analize(config_, logger_, config_.TRAJECTORY_PATH(step))
+    analize(config_, logger_, data, u, t)
     
 
 
