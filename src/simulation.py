@@ -12,6 +12,7 @@ from edward2 import SimulationData
 from edward2 import Simulation
 from config import Config
 from analysis import analize
+from analysis import final_analyze
 
 logger_: Logger = None
 config_: Config = None
@@ -156,4 +157,7 @@ def run(config: Config, logger: Logger):
         result = future.result()
     
     logger.info("Simulation finished")
+    
+    final_analyze()
+    logger.info("Analysis finished")
     

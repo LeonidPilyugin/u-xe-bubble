@@ -4,28 +4,21 @@ from ovito import io as oio
 from ovito import modifiers as mod
 from ovito import pipeline as pln
 from config import Config
+import parameter
 
 config_: Config = None
 pipeline_: pln.Pipeline = None
+logger_: Logger = None
+
+modifiers_ = [ ]
 
 def set_modifiers():
     """Sets modifiers to pipeline"""
     global pipeline_
     
-    # 
-    logger_.info("Setting WignerSeitzAnalysisModifier modifier")
-    modifier = mod.WignerSeitzAnalysisModifier()
-    modifier.reference = pln.FileSource()
-    modifier.reference.load(config_.REFERENCE_PATH)
-    modifier.affine_mapping = pln.ReferenceConfigurationModifier.AffineMapping.ToReference
-    modifier.per_type_occupancies = True
-    pipeline_.modifiers.append(modifier)
-    
-    # 
-    logger_.info("Setting ExpressionSelection modifier")
-    modifier = mod.ExpressionSelectionModifier(expression="Occupancy.1>1")
-    pipeline_.modifiers.append(modifier)
-    
+    for m in modifiers_:
+        m.setup(config_)
+        pipeline_.modifiers.append(m.modify)
     
 
 def create_pipeline(source):
@@ -40,18 +33,32 @@ def create_pipeline(source):
 
 def analize(config: Config, logger: Logger, data, u, t):
     """Processes frame"""
-    global pipeline_, logger_, config_
+    global pipeline_, logger_, config_, modifiers_
     logger_ = logger
     config_ = config
     
+    modifiers_ = [
+        parameter.MyWeignerSeitz,
+        parameter.MyClusterAnalysis,
+    ]
+    
+    #print(dir(mod.WignerSeitzAnalysisModifier))
+    #exit(0)
     # create pipeline or load data if pipeline exists
     if pipeline_ is None:
         create_pipeline(pln.StaticSource(data=data))
     else:
         pipeline_.source = pln.StaticSource(data=data)
+        
+    data = pipeline_.compute()
+    # print(data.attributes["WignerSeitz.vacancy_count"])
+        
+
+def final_analyze():
     
-    count = pipeline_.compute().attributes["ExpressionSelection.count"]
-    
-    with open(path.join(config_.ANALYSIS_DIR, "count"), "a") as f:
-        f.write(f"{count}\n")
+    for m in modifiers_:
+        m.save()
+        
+    for m in modifiers_:
+        m.plot()
         

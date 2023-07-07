@@ -26,8 +26,8 @@ class Config:
     PARTICLE_TYPE_DICT: Dict[int, int] = field(default_factory=lambda: {1: 1, 2: 3})
     
     # simulation
-    RUN_STEPS: int = 100 # 500 * 1e6
-    AVERAGE_STEPS: int = 1 # 1000
+    RUN_STEPS: int = 1000
+    AVERAGE_STEPS: int = 10
     CHECKPOINT_STEPS: int = 10
     
     # absolute path of directory with this program

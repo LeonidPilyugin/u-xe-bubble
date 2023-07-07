@@ -198,6 +198,8 @@ class Simulation:
         for _ in range(steps):
             # run 1 step
             state = self.step(1)
+            p = state.getPositions(asNumpy=True)
+            v = state.getVelocities(asNumpy=True)
             # add parameters to created variables
             positions = np.add(positions, p.value_in_unit(unit.angstrom))
             velocities = np.add(velocities, v.value_in_unit(unit.angstrom / unit.picosecond))
