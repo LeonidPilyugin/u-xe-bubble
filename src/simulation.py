@@ -45,8 +45,8 @@ def create_simulation() -> Tuple[Simulation, ndarray]:
     if config_.PLATFORM_NAME == "HIP":
         logger_.info(f"Setting HIP_VISIBLE_DEVICES = {config_.PLATFORM_PROPERTIES['DeviceIndex']}")
         os.environ["HIP_VISIBLE_DEVICES"] = config_.PLATFORM_PROPERTIES["DeviceIndex"]
+        config_.PLATFORM_PROPERTIES["DeviceIndex"] = "0"
     
-    config_.PLATFORM_PROPERTIES["DeviceIndex"] = "0"
     simulation = data.make_simulation(config_.PLATFORM_NAME, config_.PLATFORM_PROPERTIES)
     
     logger_.info("Simulation created")
@@ -133,29 +133,20 @@ def run(config: Config, logger: Logger):
     simulation, types = create_simulation()
     
     saved_checkpoints = 0
-    need_checkpoint = False
     
     logger_.info("Starting simulation")
-    # get first data
-    result = simulation.mean_next(config_.AVERAGE_STEPS)
     
-    for i in tqdm(range(0, config_.RUN_STEPS, config_.AVERAGE_STEPS)):
+    for i in tqdm(range(0, config_.RUN_STEPS, config_.AVERAGE_STEPS + config.SKIP_STEPS)):
         # start getting next data
-        future = simulation.mean_next_async(config_.AVERAGE_STEPS, need_checkpoint)
-        if need_checkpoint: need_checkpoint = False
+        result = simulation.mean_next(config_.AVERAGE_STEPS, i // config_.CHECKPOINT_STEPS >= saved_checkpoints)
+        if i // config_.CHECKPOINT_STEPS >= saved_checkpoints: saved_checkpoints += 1
         
         # process data
         u, t, p, v, s, c = result
         process(i, u, t, p, v, types, c,
                 s.getPeriodicBoxVectors(asNumpy=True).value_in_unit(un.angstrom))
         
-        # decide to generate or not checkpoint
-        if i // config_.CHECKPOINT_STEPS >= saved_checkpoints:
-            need_checkpoint = True
-            saved_checkpoints += 1
-        
-        # get result
-        result = future.result()
+        simulation.step(config.SKIP_STEPS)
     
     logger.info("Simulation finished")
     

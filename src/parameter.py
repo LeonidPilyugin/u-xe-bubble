@@ -56,11 +56,11 @@ class MyWeignerSeitz(Parameter):
             f.write(f"step,vacancies,interstitials\n")
             
             for step, (v, i) in enumerate(zip(MyWeignerSeitz.vacancy_counts, MyWeignerSeitz.interstitial_counts)):
-                f.write(f"{step * MyWeignerSeitz.config.AVERAGE_STEPS},{v},{i}\n")
+                f.write(f"{step * (MyWeignerSeitz.config.AVERAGE_STEPS + MyWeignerSeitz.config.SKIP_STEPS)},{v},{i}\n")
     
     
     def plot():
-        steps = [i * MyWeignerSeitz.config.AVERAGE_STEPS for i in range(len(MyWeignerSeitz.vacancy_counts))]
+        steps = [i * (MyWeignerSeitz.config.AVERAGE_STEPS + MyWeignerSeitz.config.SKIP_STEPS) for i in range(len(MyWeignerSeitz.vacancy_counts))]
         
         plt.plot(steps, MyWeignerSeitz.vacancy_counts)
         plt.xlabel("Step")
@@ -114,11 +114,11 @@ class MyClusterAnalysis(Parameter):
             
             for step, clusters in enumerate(MyClusterAnalysis.clusters):
                 for c in clusters:
-                    f.write(f"{step * MyClusterAnalysis.config.AVERAGE_STEPS},{c[0]},{c[1]},{c[2][0]},{c[2][1]},{c[2][2]}\n")
+                    f.write(f"{step * (MyClusterAnalysis.config.AVERAGE_STEPS + MyClusterAnalysis.config.SKIP_STEPS)},{c[0]},{c[1]},{c[2][0]},{c[2][1]},{c[2][2]}\n")
                     
                     
     def plot():
-        steps = [i * MyClusterAnalysis.config.AVERAGE_STEPS for i in range(len(MyClusterAnalysis.clusters))]
+        steps = [i * (MyClusterAnalysis.config.AVERAGE_STEPS + MyClusterAnalysis.config.SKIP_STEPS) for i in range(len(MyClusterAnalysis.clusters))]
 
         sizes = [c[0][1] for c in MyClusterAnalysis.clusters]
         x = [c[0][2][0] for c in MyClusterAnalysis.clusters]

@@ -29,6 +29,7 @@ class Config:
     RUN_STEPS: int = 1000
     AVERAGE_STEPS: int = 10
     CHECKPOINT_STEPS: int = 10
+    SKIP_STEPS: int = 10
     
     # absolute path of directory with this program
     ROOT: str = path.join("/", *path.abspath(__file__).split("/")[:-2])
