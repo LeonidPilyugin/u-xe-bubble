@@ -46,6 +46,7 @@ def create_simulation() -> Tuple[Simulation, ndarray]:
         logger_.info(f"Setting HIP_VISIBLE_DEVICES = {config_.PLATFORM_PROPERTIES['DeviceIndex']}")
         os.environ["HIP_VISIBLE_DEVICES"] = config_.PLATFORM_PROPERTIES["DeviceIndex"]
     
+    config_.PLATFORM_PROPERTIES["DeviceIndex"] = "0"
     simulation = data.make_simulation(config_.PLATFORM_NAME, config_.PLATFORM_PROPERTIES)
     
     logger_.info("Simulation created")
