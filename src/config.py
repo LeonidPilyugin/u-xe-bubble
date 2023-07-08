@@ -256,9 +256,6 @@ configs = {
     "CPU2": Config(SIMULATION_NAME="cpu2", TEMPERATURE=1000 * un.kelvins),
     "HIP": Config(SIMULATION_NAME="HIP", PLATFORM_NAME = "HIP", PLATFORM_PROPERTIES = {"DeviceIndex": "0"}),
 }
-
-# configuration
-# config: Config = configs["CPU"]
     
 if __name__ == "__main__":
     for config in configs:

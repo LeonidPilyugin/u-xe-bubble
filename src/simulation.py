@@ -146,7 +146,8 @@ def run(config: Config, logger: Logger):
         process(i, u, t, p, v, types, c,
                 s.getPeriodicBoxVectors(asNumpy=True).value_in_unit(un.angstrom))
         
-        simulation.step(config.SKIP_STEPS)
+        if config.SKIP_STEPS > 0:
+            simulation.step(config.SKIP_STEPS)
     
     logger.info("Simulation finished")
     

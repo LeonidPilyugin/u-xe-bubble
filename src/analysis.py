@@ -42,16 +42,12 @@ def analize(config: Config, logger: Logger, data, u, t):
         parameter.MyClusterAnalysis,
     ]
     
-    #print(dir(mod.WignerSeitzAnalysisModifier))
-    #exit(0)
-    # create pipeline or load data if pipeline exists
     if pipeline_ is None:
         create_pipeline(pln.StaticSource(data=data))
     else:
         pipeline_.source = pln.StaticSource(data=data)
         
     data = pipeline_.compute()
-    # print(data.attributes["WignerSeitz.vacancy_count"])
         
 
 def final_analyze():
@@ -62,3 +58,4 @@ def final_analyze():
     for m in modifiers_:
         m.plot()
         
+    parameter.plot_energy(config_)

@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from os import path
 from abc import ABC, abstractmethod
 import matplotlib
@@ -153,3 +154,15 @@ class MyClusterAnalysis(Parameter):
         plt.savefig(path.join(MyClusterAnalysis.config.ANALYSIS_DIR, "z.png"))
         plt.cla()
         
+        
+def plot_energy(config: Config):
+    data = pd.read_csv(config.ENERGY_PATH)
+    x = data["step"] * (config.SKIP_STEPS + config.AVERAGE_STEPS)
+    plt.plot(x, data["u"], label="potential")
+    plt.plot(x, data["t"], label="kinetic")
+    plt.plot(x, data["e"], label="total")
+    plt.xlabel("Step")
+    plt.ylabel("Energy, eV/mole")
+    plt.title("Energy")
+    plt.legend()
+    plt.savefig(path.join(config.ANALYSIS_DIR, "energy.png"))
