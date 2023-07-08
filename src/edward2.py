@@ -127,7 +127,7 @@ class Simulation:
 
         self.get_state_flags = {'getPositions': True,
                                 'getVelocities': True,
-                                'enforcePeriodicBox': True,
+                                'enforcePeriodicBox': False,
                                 'getForces': True,
                                 'getEnergy': True,
                                }

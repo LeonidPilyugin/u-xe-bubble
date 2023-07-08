@@ -26,7 +26,6 @@ def create_tree(config: Config):
     for dir in [
         config.CONFIGURATION_DIR,
         config.CHECKPOINT_DIR,
-        config.THERMO_DIR,
         config.LOG_DIR,
         config.TRAJECTORY_DIR,
         config.ANALYSIS_DIR,

@@ -96,23 +96,6 @@ class Config:
         """Absolute path of n step of checkpoint file"""
         return path.join(self.CHECKPOINT_DIR, str(n) + self.CHECKPOINT_EXT)
     
-    
-    @property
-    def THERMO_DIR(self) -> str:
-        """Absolute path of directory with thermo info"""
-        return path.join(self.SIMULATION_DIR, "thermo")
-    
-    # name of energy file
-    ENERGY_NAME: str = "energy"
-    # extention of energy file
-    ENERGY_EXT: str = ".csv"
-    
-    @property
-    def ENERGY_PATH(self) -> str:
-        """Absolute path of file with energies"""
-        return path.join(self.THERMO_DIR, self.ENERGY_NAME + self.ENERGY_EXT)
-    
-    
     @property
     def LOG_DIR(self) -> str:
         """Absolute path of directory with logs"""
@@ -247,14 +230,26 @@ velocity all create {self.TEMPERATURE.value_in_unit(un.kelvin)} {self.RANDOM_SEE
 
 write_dump all custom \"{self.CONFIGURATION_PATH}\" id type mass x y z vx vy vz
 """
-                
-        
-    
+
 
 configs = {
-    "CPU1": Config(SIMULATION_NAME="cpu1"),
-    "CPU2": Config(SIMULATION_NAME="cpu2", TEMPERATURE=1000 * un.kelvins),
-    "HIP": Config(SIMULATION_NAME="HIP", PLATFORM_NAME = "HIP", PLATFORM_PROPERTIES = {"DeviceIndex": "0"}),
+    "cpu": Config(
+        SIMULATION_NAME="cpu",
+        PLATFORM_NAME = "CPU",
+        AVERAGE_STEPS = 10,
+        RUN_STEPS = 1_000,
+        SKIP_STEPS = 0,
+        CHECKPOINT_STEPS = 0,
+    ),
+    "hip": Config(
+        SIMULATION_NAME="hip",
+        PLATFORM_NAME = "HIP",
+        PLATFORM_PROPERTIES = {"DeviceIndex": "0"},
+        AVERAGE_STEPS = 1_000,
+        RUN_STEPS = 1_000_000,
+        SKIP_STEPS = 0,
+        CHECKPOINT_STEPS = 0,
+    ),
 }
     
 if __name__ == "__main__":

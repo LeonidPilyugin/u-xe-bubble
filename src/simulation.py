@@ -54,9 +54,7 @@ def create_simulation() -> Tuple[Simulation, ndarray]:
     return simulation, types
 
 
-def dump(u: float,
-         t: float,
-         positions: ndarray,
+def dump(positions: ndarray,
          velocities: ndarray,
          types: ndarray,
          step: int,
@@ -88,15 +86,6 @@ def dump(u: float,
         "lammps/dump",
         columns=config_.TRAJECTORY_COLUMNS
     )
-    
-    # create energy dump file on first dump
-    if not path.exists(config_.ENERGY_PATH):
-        with open(config_.ENERGY_PATH, "w") as f:
-            f.write("step,u,t,e\n")
-    
-    # append new line to energy dump file
-    with open(config_.ENERGY_PATH, "a") as f:
-        f.write(f"{step},{u},{t},{u+t}\n")
         
     return data
         
@@ -110,9 +99,9 @@ def process(step: int, u: float, t: float, p: ndarray,
             v: ndarray, types: ndarray, cell):
     
     # dump
-    data = dump(u, t, p, v, types, step, cell)
+    data = dump(p, v, types, step, cell)
     # analyze
-    analize(config_, logger_, data, u, t)
+    analize(config_, logger_, data, u, t, step)
     
 
 
@@ -143,7 +132,7 @@ def run(config: Config, logger: Logger):
             simulation.step(config.SKIP_STEPS)
         
         
-        if (i + 1) * (config_.AVERAGE_STEPS + config.SKIP_STEPS) // config_.CHECKPOINT_STEPS >= saved_checkpoints:
+        if config.CHECKPOINT_STEPS > 0 and (i + 1) * (config_.AVERAGE_STEPS + config.SKIP_STEPS) // config_.CHECKPOINT_STEPS >= saved_checkpoints:
             save_checkpoint((i + 1) * (config_.AVERAGE_STEPS + config.SKIP_STEPS), simulation.context.createCheckpoint())
             saved_checkpoints += 1
     
