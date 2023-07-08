@@ -107,15 +107,10 @@ def save_checkpoint(step, checkpoint):
         
         
 def process(step: int, u: float, t: float, p: ndarray,
-            v: ndarray, types: ndarray, checkpoint, cell):
+            v: ndarray, types: ndarray, cell):
     
     # dump
     data = dump(u, t, p, v, types, step, cell)
-    
-    # save checkpoint if necessary
-    if checkpoint is not None:
-        save_checkpoint(step, checkpoint)
-        
     # analyze
     analize(config_, logger_, data, u, t)
     
@@ -136,18 +131,21 @@ def run(config: Config, logger: Logger):
     
     logger_.info("Starting simulation")
     
-    for i in tqdm(range(0, config_.RUN_STEPS, config_.AVERAGE_STEPS + config.SKIP_STEPS)):
-        # start getting next data
-        result = simulation.mean_next(config_.AVERAGE_STEPS, i // config_.CHECKPOINT_STEPS >= saved_checkpoints)
-        if i // config_.CHECKPOINT_STEPS >= saved_checkpoints: saved_checkpoints += 1
+    for i in tqdm(range(0, config_.RUN_STEPS // (config_.AVERAGE_STEPS + config.SKIP_STEPS))):
+        result = simulation.mean_next(config_.AVERAGE_STEPS)
         
         # process data
-        u, t, p, v, s, c = result
-        process(i, u, t, p, v, types, c,
+        u, t, p, v, s = result
+        process(i * (config_.AVERAGE_STEPS + config.SKIP_STEPS), u, t, p, v, types,
                 s.getPeriodicBoxVectors(asNumpy=True).value_in_unit(un.angstrom))
         
         if config.SKIP_STEPS > 0:
             simulation.step(config.SKIP_STEPS)
+        
+        
+        if (i + 1) * (config_.AVERAGE_STEPS + config.SKIP_STEPS) // config_.CHECKPOINT_STEPS >= saved_checkpoints:
+            save_checkpoint((i + 1) * (config_.AVERAGE_STEPS + config.SKIP_STEPS), simulation.context.createCheckpoint())
+            saved_checkpoints += 1
     
     logger.info("Simulation finished")
     

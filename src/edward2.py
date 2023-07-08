@@ -184,7 +184,7 @@ class Simulation:
         )
         
         
-    def mean_next(self, steps, create_checkpoint = False):
+    def mean_next(self, steps):
         """Means"""
         
         state = self.get_state()
@@ -212,9 +212,7 @@ class Simulation:
         u /= steps
         t /= steps
         
-        checkpoint = self.context.createCheckpoint() if create_checkpoint else None
-        
-        return u, t, positions, velocities, state, checkpoint
+        return u, t, positions, velocities, state
 
 
     def mean_next_async(self, steps, checkpoint = False):

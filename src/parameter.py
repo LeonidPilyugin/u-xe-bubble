@@ -157,10 +157,10 @@ class MyClusterAnalysis(Parameter):
         
 def plot_energy(config: Config):
     data = pd.read_csv(config.ENERGY_PATH)
-    x = data["step"] * (config.SKIP_STEPS + config.AVERAGE_STEPS)
-    plt.plot(x, data["u"], label="potential")
-    plt.plot(x, data["t"], label="kinetic")
-    plt.plot(x, data["e"], label="total")
+    
+    plt.plot(data["step"], data["u"], label="potential")
+    plt.plot(data["step"], data["t"], label="kinetic")
+    plt.plot(data["step"], data["e"], label="total")
     plt.xlabel("Step")
     plt.ylabel("Energy, eV/mole")
     plt.title("Energy")
