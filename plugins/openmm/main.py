@@ -52,8 +52,8 @@ def init(**data):
     
     # modify HIP properties
     if data["platform_name"] == "HIP":
-        os.environ["HIP_VISIBLE_DEVICES"] = data["platform_properties"]["device_index"]
-        data["platform_properties"]["device_index"] = "0"
+        os.environ["HIP_VISIBLE_DEVICES"] = data["platform_properties"]["DeviceIndex"]
+        data["platform_properties"]["DeviceIndex"] = "0"
     
     # save types
     _types = simulation_data.types
