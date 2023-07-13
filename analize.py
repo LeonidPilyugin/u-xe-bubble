@@ -6,10 +6,6 @@ import pandas as pd
 from ovito import modifiers as mod
 from ovito import pipeline as pln
 from ovito import data
-from config import Config
-
-config_: Config = None
-logger_: Logger = None
 
 pb_: mod.WrapPeriodicImagesModifier = None
 ws_: mod.WignerSeitzAnalysisModifier = None
@@ -24,6 +20,7 @@ kinetic_energies_ = []
 steps_ = []
 defects_: pd.DataFrame = None
 thermo_: pd.DataFrame = None
+clustersdf_: pd.DataFrame = None
 
 def compute(data: data.DataCollection):
     # run pipeline
@@ -46,7 +43,7 @@ def compute(data: data.DataCollection):
     interstitial_counts_.append(data.attributes["ExpressionSelection.count.2"])
 
 
-def setup():
+def setup(**data):
     # set config
     global pb_, ws_, es1_, es2_, ca_
     
@@ -56,7 +53,7 @@ def setup():
     # set Weigner-Seitz modifier
     ws_ = mod.WignerSeitzAnalysisModifier()
     ws_.reference = pln.FileSource()
-    ws_.reference.load(config_.REFERENCE_PATH)
+    ws_.reference.load(data["reference_path"])
     ws_.affine_mapping = pln.ReferenceConfigurationModifier.AffineMapping.ToReference
     ws_.per_type_occupancies = True
 
@@ -70,8 +67,8 @@ def setup():
     )
     
     
-def save():
-    global defects_, thermo_, clusters_
+def save(**data):
+    global defects_, thermo_, clusters_, clustersdf_
     
     # save defects
     defects_ = pd.DataFrame(
@@ -79,7 +76,7 @@ def save():
         columns=["step", "vacancies", "interstitials"]
     )
     
-    defects_.to_csv(path.join(config_.ANALYSIS_DIR, "defects.csv"))
+    defects_.to_csv(path.join(data["result_dir"], "defects.csv"))
     
     # save clusters
     temp = []
@@ -87,12 +84,12 @@ def save():
         for cl in c:
             temp.append((s, cl[0], cl[1], *tuple(cl[2])))
             
-    clusters_ = pd.DataFrame(
+    clustersdf_ = pd.DataFrame(
         temp,
         columns=["step", "cluster id", "size", "x", "y", "z"]
     )
     
-    clusters_.to_csv(path.join(config_.ANALYSIS_DIR, "clusters.csv"))
+    clustersdf_.to_csv(path.join(data["result_dir"], "clusters.csv"))
     
     # save thermo
     thermo_ = pd.DataFrame(
@@ -101,20 +98,20 @@ def save():
     )
     thermo_["total energy"] = thermo_["potential energy"] + thermo_["kinetic energy"]
     
-    thermo_.to_csv(path.join(config_.ANALYSIS_DIR, "thermo.csv"))
+    thermo_.to_csv(path.join(data["result_dir"], "thermo.csv"))
 
 
-def plot():
+def plot(**data):
     # aply style
     matplotlib.use('Agg')
-    plt.style.use("https://raw.githubusercontent.com/LeonidPilyugin/mpl-style/main/simple.mplstyle")
+    plt.style.use(data["mpl_style"])
     
     # plot all vacancies
     plt.plot(steps_, vacancy_counts_)
     plt.xlabel("Step")
     plt.ylabel("Vacancies")
     plt.title("Vacancies")
-    plt.savefig(path.join(config_.ANALYSIS_DIR, "vacancies.png"))
+    plt.savefig(path.join(data["plot_dir"], "vacancies.png"))
     plt.cla()
     
     # plot all interstitials
@@ -122,7 +119,7 @@ def plot():
     plt.xlabel("Step")
     plt.ylabel("Interstitials")
     plt.title("Interstitials")
-    plt.savefig(path.join(config_.ANALYSIS_DIR, "interstitials.png"))
+    plt.savefig(path.join(data["plot_dir"], "interstitials.png"))
     plt.cla()
     
     # plot energies
@@ -133,11 +130,11 @@ def plot():
     plt.ylabel("Energy, eV/mole")
     plt.title("Energy")
     plt.legend()
-    plt.savefig(path.join(config_.ANALYSIS_DIR, "energy.png"))
+    plt.savefig(path.join(data["plot_dir"], "energy.png"))
     plt.cla()
     
     # choose largest cluster
-    cluster = clusters_[clusters_["cluster id"] == 1]
+    cluster = clustersdf_[clustersdf_["cluster id"] == 1]
     cluster.index = range(len(cluster.index))
     
     # plot vacancies outside bubble
@@ -145,7 +142,7 @@ def plot():
     plt.xlabel("Step")
     plt.ylabel("Non-bubble vacancie")
     plt.title("Non-bubble vacancies")
-    plt.savefig(path.join(config_.ANALYSIS_DIR, "nonbubblevacancies.png"))
+    plt.savefig(path.join(data["plot_dir"], "nonbubblevacancies.png"))
     plt.cla()
     
     # plot bubble size
@@ -153,7 +150,7 @@ def plot():
     plt.xlabel("Step")
     plt.ylabel("Size")
     plt.title("Size of cluster")
-    plt.savefig(path.join(config_.ANALYSIS_DIR, "size.png"))
+    plt.savefig(path.join(data["plot_dir"], "size.png"))
     plt.cla()
     
     # plot x coordinate
@@ -161,7 +158,7 @@ def plot():
     plt.xlabel("Step")
     plt.ylabel("x")
     plt.title("x")
-    plt.savefig(path.join(config_.ANALYSIS_DIR, "x.png"))
+    plt.savefig(path.join(data["plot_dir"], "x.png"))
     plt.cla()
     
     # plot y coordinate
@@ -169,7 +166,7 @@ def plot():
     plt.xlabel("Step")
     plt.ylabel("y")
     plt.title("y")
-    plt.savefig(path.join(config_.ANALYSIS_DIR, "y.png"))
+    plt.savefig(path.join(data["plot_dir"], "y.png"))
     plt.cla()
     
     # plot z coordinate
@@ -177,24 +174,26 @@ def plot():
     plt.xlabel("Step")
     plt.ylabel("z")
     plt.title("z")
-    plt.savefig(path.join(config_.ANALYSIS_DIR, "z.png"))
+    plt.savefig(path.join(data["plot_dir"], "z.png"))
     plt.cla()
 
 
-def analize(config: Config, logger: Logger, data, u, t, step):
+def analize(frame, u, t, step, **data):
     """Processes frame"""
-    global logger_, config_
-    logger_ = logger
-    config_ = config
     
     potential_energies_.append(u)
     kinetic_energies_.append(t)
     steps_.append(step)
     
     if ws_ is None:
-        setup()
+        setup(**data)
     
-    compute(data)
+    compute(frame)
+    
+    if len(steps_) % data["plot_every_points"] == 0 or \
+        len(steps_) == data["run_steps"] // (data["average_steps"] + data["skip_steps"]):
+        save(**data)
+        plot(**data)
         
 
 def final_analyze():

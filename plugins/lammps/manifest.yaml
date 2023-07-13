@@ -1,0 +1,4 @@
+name: lammps
+description: Executes LAMMPS script
+entries:
+- main

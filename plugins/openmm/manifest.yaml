@@ -1,0 +1,5 @@
+name: openmm
+description: Runs OpenMM simulation
+entries:
+- init
+- simulate

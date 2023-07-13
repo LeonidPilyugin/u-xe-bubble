@@ -1,0 +1,90 @@
+---
+plugins:
+- tree
+- lammps
+- openmm
+
+BASE_DIR: &BASE_DIR /home/leonid/github.com/LeonidPilyugin/u-xe-bubble/result/simulation
+LOG_DIR: &LOG_DIR !join [*BASE_DIR, "log"]
+ANALYSIS_DIR: &ANALYSIS_DIR !join [*BASE_DIR, "analysis"]
+CHECKPOINT_DIR: &CHECKPOINT_DIR !join [*BASE_DIR, "checkpoint"]
+CONFIGURATION_DIR: &CONFIGURATION_DIR !join [*BASE_DIR, "configuration"]
+TRAJECTORY_DIR: &TRAJECTORY_DIR !join [*BASE_DIR, "trajectory"]
+SOURCE_DIR: &SOURCE_DIR !join [*BASE_DIR, "src"]
+
+sequence:
+- tree.create:
+    exist_ok: No
+    /:
+    - *BASE_DIR: 
+    - *ANALYSIS_DIR:
+    - *CHECKPOINT_DIR:
+    - *CONFIGURATION_DIR:
+    - *LOG_DIR:
+    - *TRAJECTORY_DIR:
+    - *SOURCE_DIR:
+
+- tree.install:
+    pairs:
+    - /home/leonid/github.com/LeonidPilyugin/u-xe-bubble/script.lmp: &RAW_SCRIPT !join [*SOURCE_DIR, script.lmp]
+    - /home/leonid/github.com/LeonidPilyugin/u-xe-bubble/potentials/U_Mo_Xe.2013.eam.alloy: &EAM_POTENTIAL !join [*SOURCE_DIR, U_Mo_Xe.2013.eam.alloy]
+    - /home/leonid/github.com/LeonidPilyugin/u-xe-bubble/potentials/output-gb.xml: &XML_POTENTIAL !join [*SOURCE_DIR, output-gb.xml]
+    - https://raw.githubusercontent.com/LeonidPilyugin/mpl-style/main/simple.mplstyle: &MPL_STYLE !join [*SOURCE_DIR, simple.mplstyle]
+    - /home/leonid/github.com/LeonidPilyugin/u-xe-bubble/config.yaml: !join [*SOURCE_DIR, config.yaml]
+    - /home/leonid/github.com/LeonidPilyugin/u-xe-bubble/analize.py: &ANALIZING_SCRIPT !join [*SOURCE_DIR, analize.py]
+
+- lammps.main:
+    executable: /home/leonid/github.com/other/lammps/build/lmp
+    script: *RAW_SCRIPT
+    script_save: !join [*CONFIGURATION_DIR, script.lmp]
+    log: !join [*LOG_DIR, "lammps.log"]
+    variables:
+      lattice_parameter: 3.5449
+      box_size: 70.898
+      radius: 7.79878
+      additional_atoms: 0
+      temperature: 1400
+      occupancy: 10/27
+      random_seed: 10
+      reference_path: &REFERENCE_PATH !join [*CONFIGURATION_DIR, reference.atom]
+      eam_potential_path: *EAM_POTENTIAL
+      configuration_path: &CONFIGURATION_PATH !join [*CONFIGURATION_DIR, configuration.atom]
+
+- openmm.init:
+    checkpoint: ~
+    configuration: *CONFIGURATION_PATH
+    integrator:
+      type: VerletIntegrator
+      arguments:
+      - 0.001
+    forces:
+    - Potential:
+        potential_path: *XML_POTENTIAL
+        particle_types:
+          1: 1
+          2: 3
+    - CMMotionRemover: {}
+    
+    platform_name: CPU
+    platform_properties: {}
+
+- openmm.simulate:
+    run_steps: &RUN_STEPS 1000
+    average_steps: &AVERAGE_STEPS 10
+    skip_steps: &SKIP_STEPS 10
+    checkpoint_steps: 100
+    checkpoint_template: !join [*CHECKPOINT_DIR, "{i}.chp"]
+    trajectory_template: !join [*TRAJECTORY_DIR, "{i}.trj"]
+
+    analyzing_script: *ANALIZING_SCRIPT
+    analyzing_function: analize
+    analysis_args:
+      reference_path: *REFERENCE_PATH
+      mpl_style: *MPL_STYLE
+      plot_dir: *ANALYSIS_DIR
+      result_dir: *ANALYSIS_DIR
+      run_steps: *RUN_STEPS
+      average_steps: *AVERAGE_STEPS
+      skip_steps: *SKIP_STEPS
+      plot_every_points: 10
+...
