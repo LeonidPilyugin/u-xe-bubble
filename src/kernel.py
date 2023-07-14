@@ -6,7 +6,6 @@ from plugin import Plugin
 class Kernel:
     
     def __init__(self, config: str):
-        self.PLUGIN_DIR = "./plugins"
         self.state = State()
         self.state.load(config)
         self.plugins = {}
@@ -15,7 +14,7 @@ class Kernel:
     
     def load(self):
         for plugin_name in self.state["plugins"]:
-            self.plugins[plugin_name] = Plugin(os.path.join(self.PLUGIN_DIR, plugin_name))
+            self.plugins[plugin_name] = Plugin(os.path.join(os.path.dirname(__file__), "../plugins", plugin_name))
     
     
     def run(self):
