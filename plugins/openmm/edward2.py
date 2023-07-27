@@ -117,6 +117,14 @@ class SimulationData:
             pass
         return super().__getattribute__(name)
 
+    def __setattr__(self, name, value) -> None:
+        try:
+            if super().__getattribute__('tainted') and name != 'tainted':
+                raise RuntimeError("Access to a tainted SimulationData")
+        except AttributeError:
+            pass
+        return super().__setattr__(name, value)
+
 
 class Simulation:
     def __init__(self, context, integrator):
