@@ -24,7 +24,7 @@ class Kernel:
     def load(self):
         try:
             for plugin_name in self.state["plugins"]:
-                self.plugins[plugin_name] = Plugin(os.path.join(os.path.dirname(__file__), "../plugins", plugin_name))
+                self.plugins[plugin_name] = Plugin(os.path.join(os.path.dirname(__file__), "..", "plugins", plugin_name))
         except KeyError:
             raise InvalidConfig("Cannot find plugins")
     

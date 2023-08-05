@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import openmm as mm
 from tqdm import tqdm
+import subprocess
 from openmm import unit as un
 from ovito import data as odata
 from ovito import io as oio
@@ -66,12 +67,18 @@ def init(**data):
             _simulation.context.loadCheckpoint(f.read())
             
 
-def dump(positions: np.ndarray,
+def dump(therm,
+         positions: np.ndarray,
          velocities: np.ndarray,
+         u: float,
+         t: float,
          step: int,
          cell,
          **data):
     """Writes dumps of energies and positions"""
+    
+    therm.write(f"{step},{u},{t}\n")
+    therm.flush()
     
     data_collection = odata.DataCollection()
     
@@ -128,29 +135,36 @@ def simulate(**data):
     saved_checkpoints = 0
     iter_steps = data["average_steps"] + data["skip_steps"]
     
-    analize = None if data["analyzing_script"] is None else load_analyzing_script(data["analyzing_script"], data["analyzing_function"])
+    if not data["analyzing_script"] is None:
+        log = open(data["logfile"], "w")
+        analize = subprocess.Popen(f"python {data['analyzing_script']}", shell=True, stdout=log, stderr=log)
     
-    for i in tqdm(range(0, data["run_steps"] // iter_steps)):
-        # get data
-        result = _simulation.mean_next(data["average_steps"])
+    with open(data["thermo"], "w") as f:
+        f.write("step,u,t\n")
+        for i in tqdm(range(0, data["run_steps"] // iter_steps)):
+            # get data
+            result = _simulation.mean_next(data["average_steps"])
+            
+            # split result
+            u, t, p, v, s = result
+            # dump
+            dump(f, p, v, u, t, i * iter_steps, s.getPeriodicBoxVectors(asNumpy=True).value_in_unit(un.angstrom), **data)
+            
+            # skip dumps
+            if data["skip_steps"] > 0:
+                _simulation.step(data["skip_steps"])
+            
+            # save checkpoint
+            if data["checkpoint_steps"] > 0 and (i + 1) * iter_steps // data["checkpoint_steps"] >= saved_checkpoints:
+                with open(data["checkpoint_template"].format(i=(i + 1) * iter_steps), "wb") as ff:
+                    ff.write(_simulation.context.createCheckpoint())
+                saved_checkpoints += 1
         
-        # split result
-        u, t, p, v, s = result
-        # dump
-        frame = dump(p, v, i * iter_steps, s.getPeriodicBoxVectors(asNumpy=True).value_in_unit(un.angstrom), **data)
+    if not data["analyzing_script"] is None:
+        with open(data["trajectory_template"].format(i=data["run_steps"]), "w") as f:
+            f.write("")
         
-        # analize frame
-        if analize is not None:
-            analize(frame, u, t, i * iter_steps, **data["analysis_args"])
-        
-        # skip dumps
-        if data["skip_steps"] > 0:
-            _simulation.step(data["skip_steps"])
-        
-        # save checkpoint
-        if data["checkpoint_steps"] > 0 and (i + 1) * iter_steps // data["checkpoint_steps"] >= saved_checkpoints:
-            with open(data["checkpoint_template"].format(i=(i + 1) * iter_steps), "wb") as f:
-                f.write(_simulation.context.createCheckpoint())
-            saved_checkpoints += 1
-
+        analize.wait()
+        log.close()
+        os.remove(data["trajectory_template"].format(i=data["run_steps"]))
     
