@@ -166,5 +166,4 @@ def simulate(**data):
         
         analize.wait()
         log.close()
-        os.remove(data["trajectory_template"].format(i=data["run_steps"]))
     
