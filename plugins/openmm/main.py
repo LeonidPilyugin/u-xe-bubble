@@ -105,6 +105,9 @@ def dump(positions: np.ndarray,
             "Velocity.X",
             "Velocity.Y",
             "Velocity.Z",
+            "Force.X",
+            "Force.Y",
+            "Force.Z",
         ]
     )
     
@@ -152,5 +155,8 @@ def simulate(**data):
             with open(data["checkpoint_template"].format(i=(i + 1) * iter_steps), "wb") as f:
                 f.write(_simulation.context.createCheckpoint())
             saved_checkpoints += 1
+
+    with open(data["checkpoint_template"].format(i=(i + 1) * iter_steps), "wb") as f:
+                f.write(_simulation.context.createCheckpoint())
 
     
