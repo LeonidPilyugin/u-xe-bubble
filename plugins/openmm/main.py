@@ -166,20 +166,6 @@ def simulate(**data):
     if not data["analyzing_script"] is None:
         with open(data["trajectory_template"].format(i=data["run_steps"]), "w") as f:
             f.write("")
-        
-        # analize frame
-        if analize is not None:
-            analize(frame, u, t, i * iter_steps, **data["analysis_args"])
-        
-        # skip dumps
-        if data["skip_steps"] > 0:
-            _simulation.step(data["skip_steps"])
-        
-        # save checkpoint
-        if data["checkpoint_steps"] > 0 and (i + 1) * iter_steps // data["checkpoint_steps"] >= saved_checkpoints:
-            with open(data["checkpoint_template"].format(i=(i + 1) * iter_steps), "wb") as f:
-                f.write(_simulation.context.createCheckpoint())
-            saved_checkpoints += 1
 
         analize.wait()
         log.close()
