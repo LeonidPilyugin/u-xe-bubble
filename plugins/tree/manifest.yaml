@@ -3,3 +3,4 @@ description: Creates file tree
 entries:
 - create
 - install
+- chmod

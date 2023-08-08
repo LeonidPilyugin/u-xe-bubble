@@ -1,5 +1,15 @@
 import yaml
 import os
+import importlib.util as iu
+from inspect import getmembers, isfunction
+
+
+class ConfigException(Exception):
+    pass
+
+class YamlRepresentersFileException(ConfigException):
+    pass
+
 
 class State:
     """Stores state"""
@@ -10,11 +20,30 @@ class State:
     
     def load(self, path: str):
         """Loads config by path"""
-        yaml.add_constructor('!join', join)
-            
-        # load config
         with open(path) as f:
-            self._dict = yaml.load(f, Loader=yaml.loader.UnsafeLoader)
+            line = f.readline()
+            if line[0] == "#":
+                repr = line.split("#")[1].strip()
+                try:
+                    # load functions
+                    spec = iu.spec_from_file_location("repr", repr)
+                    module = iu.module_from_spec(spec)
+                    spec.loader.exec_module(module)
+                    func = getmembers(module, isfunction)
+                    
+                    for name, obj in func:
+                        if name.startswith("_"):
+                            continue
+                        yaml.add_constructor(f"!{name}", obj)
+                except Exception:
+                    raise YamlRepresentersFileException(f"Incorrect \"{repr}\" YAML representers file")
+            
+        try:
+            # load config
+            with open(path) as f:
+                self._dict = yaml.load(f, Loader=yaml.loader.UnsafeLoader)
+        except Exception:
+            raise ConfigException(f"Incorrect config \"{path}\"")
         
     
     def __getitem__(self, key):

@@ -24,7 +24,6 @@ class EntryNotFoundException(PluginException):
 
 
 class Plugin:
-    
     def __init__(self, path: str):
         sys.path.append(path)
         self.path = path
@@ -33,7 +32,6 @@ class Plugin:
     
     
     def load(self):
-        
         if not os.path.exists(self.path):
             raise PluginNotFoundException(f"Cannot find plugin in \"{self.name}\" plugin")
         
@@ -82,7 +80,7 @@ class Plugin:
         except KeyError:
             raise EntryNotFoundException(f"Entry \"{entry}\" not found for plugin \"{self.name}\"")
         except Exception:
-            if kwargs.get("strict", False):
+            if kwargs.get("strict", True):
                 raise 
     
     

@@ -2,10 +2,10 @@ from pathlib import Path
 from typing import List
 import shutil
 import wget
+import os
+import subprocess
 
 def create_tree(wd: Path, structure: List, exist_ok: bool):
-    """Creates simulation file tree"""
-    
     # return if nothing to do
     if structure is None:
         return
@@ -46,3 +46,12 @@ def install(**data):
         else:
             wget.download(src, dst, None)
         
+        
+def chmod(**data):
+    for pair in data["pairs"]:
+        # get path and mod
+        path = list(pair.keys())[0]
+        mod = pair[path]
+        
+        # chmod
+        subprocess.call(f"chmod {mod} {path}", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
