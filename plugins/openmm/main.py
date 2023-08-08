@@ -112,9 +112,6 @@ def dump(therm,
             "Velocity.X",
             "Velocity.Y",
             "Velocity.Z",
-            "Force.X",
-            "Force.Y",
-            "Force.Z",
         ]
     )
     
