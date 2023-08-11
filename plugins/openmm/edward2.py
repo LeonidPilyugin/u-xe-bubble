@@ -144,7 +144,7 @@ class Simulation:
                                 'getEnergy': True,
                                }
         
-        self.masses = np.ndarray([context.getSystem().getParticleMass(i).value_in_unit(unit.dalton) / scipy.constants.N_A / 1000 for i in range(context.getSystem().getNumParticles())])
+        self.masses = np.asarray([context.getSystem().getParticleMass(i).value_in_unit(unit.dalton) / scipy.constants.N_A / 1000 for i in range(context.getSystem().getNumParticles())])
 
     def get_state(self) -> openmm.State:
         assert not self.running
