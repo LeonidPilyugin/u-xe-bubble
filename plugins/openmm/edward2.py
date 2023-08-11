@@ -208,8 +208,6 @@ class Simulation:
         u = t = T = P = 0
         positions = np.zeros_like(p)
         velocities = np.zeros_like(v)
-        
-        print(state.getPeriodicBoxVectors(asNumpy=True))
 
         for _ in range(steps):
             # run 1 step
