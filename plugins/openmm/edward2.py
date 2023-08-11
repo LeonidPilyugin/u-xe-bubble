@@ -220,7 +220,7 @@ class Simulation:
             u += u_
             t_ = state.getKineticEnergy().value_in_unit(unit.kilojoule_per_mole)
             t += t_
-            T_ = t_ * 2 / 3 / 1000 / scipy.constants.k
+            T_ = t_ * 2 / 3 * 1000 / scipy.constants.k / scipy.constants.N_A
             T += T_
             
             N_ = len(p)
