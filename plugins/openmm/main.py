@@ -72,12 +72,14 @@ def dump(therm,
          velocities: np.ndarray,
          u: float,
          t: float,
+         P: float,
+         T: float,
          step: int,
          cell,
          **data):
     """Writes dumps of energies and positions"""
     
-    therm.write(f"{step},{u},{t}\n")
+    therm.write(f"{step},{u},{t},{P},{T}\n")
     therm.flush()
     
     data_collection = odata.DataCollection()
@@ -140,15 +142,15 @@ def simulate(**data):
         analize = subprocess.Popen(f"python {data['analyzing_script']}", shell=True, stdout=log, stderr=log)
     
     with open(data["thermo"], "w") as f:
-        f.write("step,u,t\n")
+        f.write("step,u,t,P,T\n")
         for i in tqdm(range(0, data["run_steps"] // iter_steps)):
             # get data
             result = _simulation.mean_next(data["average_steps"])
             
             # split result
-            u, t, p, v, s = result
+            u, t, P, T, p, v, s = result
             # dump
-            dump(f, p, v, u, t, i * iter_steps, s.getPeriodicBoxVectors(asNumpy=True).value_in_unit(un.angstrom), **data)
+            dump(f, p, v, u, t, P, T, i * iter_steps, s.getPeriodicBoxVectors(asNumpy=True).value_in_unit(un.angstrom), **data)
             
             # skip dumps
             if data["skip_steps"] > 0:

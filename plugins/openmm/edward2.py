@@ -10,6 +10,10 @@ import os
 
 import numpy as np
 
+import scipy
+import scipy.constants
+
+
 class SimulationData:
     def __init__(self):
         self.forces = []
@@ -199,7 +203,7 @@ class Simulation:
         
         p = state.getPositions(asNumpy=True)
         v = state.getVelocities(asNumpy=True)
-        u = t = 0
+        u = t = T = P = 0
         positions = np.zeros_like(p)
         velocities = np.zeros_like(v)
 
@@ -211,16 +215,28 @@ class Simulation:
             # add parameters to created variables
             positions = np.add(positions, p.value_in_unit(unit.angstrom))
             velocities = np.add(velocities, v.value_in_unit(unit.angstrom / unit.picosecond))
-            u += state.getPotentialEnergy().value_in_unit(unit.elementary_charge * unit.volt / unit.mole)
-            t += state.getKineticEnergy().value_in_unit(unit.elementary_charge * unit.volt / unit.mole)
+            
+            u_ = state.getPotentialEnergy().value_in_unit(unit.kilojoule_per_mole)
+            u += u_
+            t_ = state.getKineticEnergy().value_in_unit(unit.kilojoule_per_mole)
+            t += t_
+            T_ = t_ * 2 / 3 / 1000 / scipy.constants.k
+            T += T_
+            
+            N_ = len(p)
+            V_ = state.getPeriodicBoxVolume().value_in_unit(unit.meter ** 3)
+            P_ = N_ * scipy.constants.k * T_ / V_ + (p.value_in_unit(unit.meter) * state.getForces(asNumpy=True).value_in_unit(unit.newton)) / 3 / V_
+            P += P_
         
         # mean parameters
         positions /= steps
         velocities /= steps
         u /= steps
         t /= steps
+        T /= steps
+        P /= steps
         
-        return u, t, positions, velocities, state
+        return u, t, P, T, positions, velocities, state
 
 
     def mean_next_async(self, steps, checkpoint = False):
