@@ -229,7 +229,7 @@ class Simulation:
             T += T_
             
             V_ = state.getPeriodicBoxVolume().value_in_unit(unit.meter ** 3)
-            P_ = N_ * scipy.constants.k * T_ / V_ + (p.value_in_unit(unit.meter) * state.getForces(asNumpy=True).value_in_unit(unit.newton/unit.mole)).sum() / 3 / V_ / scipy.constants.N_A
+            P_ = N_ * scipy.constants.k * T_ / V_ + (np.fmod(p.value_in_unit(unit.meter), state.getPeriodicBoxVectors(asNumpy=True).value_in_unit(unit.meter)) * state.getForces(asNumpy=True).value_in_unit(unit.newton/unit.mole)).sum() / 3 / V_ / scipy.constants.N_A
             P += P_
         
         # mean parameters
