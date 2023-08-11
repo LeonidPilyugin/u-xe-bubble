@@ -143,6 +143,8 @@ class Simulation:
                                 'getForces': True,
                                 'getEnergy': True,
                                }
+        
+        self.masses = np.ndarray([context.getSystem().getParticleMass(i).value_in_unit(unit.gram) / 1000 for i in range(context.getSystem().getNumParticles())])
 
     def get_state(self) -> openmm.State:
         assert not self.running
@@ -220,10 +222,12 @@ class Simulation:
             u += u_
             t_ = state.getKineticEnergy().value_in_unit(unit.kilojoule_per_mole)
             t += t_
-            T_ = t_ * 2 / 3 * 1000 / scipy.constants.k / scipy.constants.N_A
-            T += T_
             
             N_ = len(p)
+            
+            T_ = (self.masses * v.value_in_unit(unit.meter / unit.second) ** 2).sum() / scipy.constants.k / N_ * 2 / 3
+            T += T_
+            
             V_ = state.getPeriodicBoxVolume().value_in_unit(unit.meter ** 3)
             P_ = N_ * scipy.constants.k * T_ / V_ + (p.value_in_unit(unit.meter) * state.getForces(asNumpy=True).value_in_unit(unit.newton/unit.mole)).sum() / 3 / V_
             P += P_
