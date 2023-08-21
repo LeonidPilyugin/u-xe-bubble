@@ -201,7 +201,7 @@ class Simulation:
     def mean_next(self, steps, ):
         """Means"""
         
-        time_ = self.context.getTime() / 1e12
+        time_ = self.context.getTime().value_in_unit(unit.second)
         state = self.get_state()
         
         p = state.getPositions(asNumpy=True)
@@ -241,7 +241,7 @@ class Simulation:
             P_ = N_ * scipy.constants.k * T_ / V_ + (np.fmod(p.value_in_unit(unit.meter) + (abs(int(np.min(p.value_in_unit(unit.meter))))+1) * bv_, bv_) * state.getForces(asNumpy=True).value_in_unit(unit.newton/unit.mole)).sum() / 3 / V_ / scipy.constants.N_A
             P += P_
         
-        time_ = self.context.getTime() / 1e12 - time_
+        time_ = self.context.getTime().value_in_unit(unit.second) - time_
         
         # mean parameters
         positions /= steps
