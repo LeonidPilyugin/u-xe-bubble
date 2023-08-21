@@ -236,10 +236,7 @@ class Simulation:
             bv_ = np.asarray([bv_[0][0], bv_[1][1], bv_[2][2]])
             
             p_ = np.fmod(p.value_in_unit(unit.meter) + (abs(int(np.min(p.value_in_unit(unit.meter))))+1) * bv_, bv_)
-            Gs.append(self.masses * (v.value_in_unit(unit.meter / unit.second) * p_).sum())
-            
-            P_ = N_ * scipy.constants.k * T_ / V_ + (np.fmod(p.value_in_unit(unit.meter) + (abs(int(np.min(p.value_in_unit(unit.meter))))+1) * bv_, bv_) * state.getForces(asNumpy=True).value_in_unit(unit.newton/unit.mole)).sum() / 3 / V_ / scipy.constants.N_A
-            P += P_
+            Gs.append((self.masses * np.sum((v.value_in_unit(unit.meter / unit.second) * p_), axis=1)).sum())
         
         time_ = self.context.getTime().value_in_unit(unit.second) - time_
         
@@ -249,7 +246,7 @@ class Simulation:
         u /= steps
         t /= steps
         T /= steps
-        P = N_ * scipy.constants.k * T_ / V_ + (np.polyfit(Gs, np.linspace(0, time_, len(Gs)), 1)[1] - 3 * scipy.constants.k * N_ * T) / 3 / V_
+        P = N_ * scipy.constants.k * T / V_ + (np.polyfit(np.linspace(0, time_, len(Gs)), Gs, 1)[0] - 3 * scipy.constants.k * N_ * T) / 3 / V_
         
         return u, t, P, T, positions, velocities, state
 
