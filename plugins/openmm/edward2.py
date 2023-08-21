@@ -198,9 +198,10 @@ class Simulation:
         )
         
         
-    def mean_next(self, steps):
+    def mean_next(self, steps, ):
         """Means"""
         
+        time_ = self.context.getTime() / 1e12
         state = self.get_state()
         
         p = state.getPositions(asNumpy=True)
@@ -208,6 +209,8 @@ class Simulation:
         u = t = T = P = 0
         positions = np.zeros_like(p)
         velocities = np.zeros_like(v)
+        
+        Gs = []
 
         for _ in range(steps):
             # run 1 step
@@ -231,8 +234,14 @@ class Simulation:
             V_ = state.getPeriodicBoxVolume().value_in_unit(unit.meter ** 3)
             bv_ = state.getPeriodicBoxVectors(asNumpy=True).value_in_unit(unit.meter)
             bv_ = np.asarray([bv_[0][0], bv_[1][1], bv_[2][2]])
-            P_ = N_ * scipy.constants.k * T_ / V_ - (np.fmod(p.value_in_unit(unit.meter) + (abs(int(np.min(p.value_in_unit(unit.meter))))+1) * bv_, bv_) * state.getForces(asNumpy=True).value_in_unit(unit.newton/unit.mole)).sum() / 3 / V_ / scipy.constants.N_A
+            
+            p_ = np.fmod(p.value_in_unit(unit.meter) + (abs(int(np.min(p.value_in_unit(unit.meter))))+1) * bv_, bv_)
+            Gs.append(self.masses * v.value_in_unit(unit.meter / unit.second) * p_)
+            
+            P_ = N_ * scipy.constants.k * T_ / V_ + (np.fmod(p.value_in_unit(unit.meter) + (abs(int(np.min(p.value_in_unit(unit.meter))))+1) * bv_, bv_) * state.getForces(asNumpy=True).value_in_unit(unit.newton/unit.mole)).sum() / 3 / V_ / scipy.constants.N_A
             P += P_
+        
+        time_ = self.context.getTime() / 1e12 - time_
         
         # mean parameters
         positions /= steps
@@ -240,7 +249,7 @@ class Simulation:
         u /= steps
         t /= steps
         T /= steps
-        P /= steps
+        P = N_ * scipy.constants.k * T_ / V_ + (np.polyfit(Gs, np.linspace(0, time_, len(Gs)), 1)[1] - 3 * scipy.constants.k * N_ * T) / 3 / V_
         
         return u, t, P, T, positions, velocities, state
 
