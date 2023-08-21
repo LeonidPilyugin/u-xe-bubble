@@ -236,7 +236,7 @@ class Simulation:
             bv_ = np.asarray([bv_[0][0], bv_[1][1], bv_[2][2]])
             
             p_ = np.fmod(p.value_in_unit(unit.meter) + (abs(int(np.min(p.value_in_unit(unit.meter))))+1) * bv_, bv_)
-            Gs.append(self.masses * np.sum(v.value_in_unit(unit.meter / unit.second) * p_))
+            Gs.append(self.masses * (v.value_in_unit(unit.meter / unit.second) * p_).sum())
             
             P_ = N_ * scipy.constants.k * T_ / V_ + (np.fmod(p.value_in_unit(unit.meter) + (abs(int(np.min(p.value_in_unit(unit.meter))))+1) * bv_, bv_) * state.getForces(asNumpy=True).value_in_unit(unit.newton/unit.mole)).sum() / 3 / V_ / scipy.constants.N_A
             P += P_
