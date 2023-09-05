@@ -235,7 +235,7 @@ class Simulation:
             bv_ = state.getPeriodicBoxVectors(asNumpy=True).value_in_unit(unit.meter)
             bv_ = np.asarray([bv_[0][0], bv_[1][1], bv_[2][2]])
             
-            p_ = np.fmod(p.value_in_unit(unit.meter) + (abs(int(np.min(p.value_in_unit(unit.meter))))+1) * bv_, bv_)
+            p_ = 0 #np.fmod(p.value_in_unit(unit.meter) + (abs(int(np.min(p.value_in_unit(unit.meter))))+1) * bv_, bv_)
             Gs.append((self.masses * np.sum((v.value_in_unit(unit.meter / unit.second) * p_), axis=1)).sum())
         
         time_ = self.context.getTime().value_in_unit(unit.second) - time_
@@ -246,7 +246,7 @@ class Simulation:
         u /= steps
         t /= steps
         T /= steps
-        P = N_ * scipy.constants.k * T / V_ + (np.polyfit(np.linspace(0, time_, len(Gs)), Gs, 1)[0] - 3 * scipy.constants.k * N_ * T) / 3 / V_
+        P = 0 # np.polyfit(np.linspace(0, time_, len(Gs)), Gs, 1)[0] / 3 / V_
         
         return u, t, P, T, positions, velocities, state
 
